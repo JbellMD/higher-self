@@ -297,32 +297,6 @@ function App() {
     return date.toLocaleDateString();
   };
 
-  // Handle title click for special effect
-  const handleTitleClick = () => {
-    // Create a shooting star effect on title click
-    const chatContainer = document.querySelector('.chat-container');
-    if (chatContainer) {
-      const star = document.createElement('div');
-      star.className = 'shooting-star-special';
-      
-      // Random position
-      const randomTop = Math.random() * 80; // % from top
-      const randomLeft = Math.random() * 80; // % from left
-      
-      star.style.top = `${randomTop}%`;
-      star.style.left = `${randomLeft}%`;
-      
-      chatContainer.appendChild(star);
-      
-      // Remove after animation completes
-      setTimeout(() => {
-        if (chatContainer.contains(star)) {
-          chatContainer.removeChild(star);
-        }
-      }, 2000);
-    }
-  };
-
   const currentSession = sessions.find(s => s.id === currentSessionId);
 
   return (
@@ -413,11 +387,7 @@ function App() {
           <div className="shooting-star-2"></div>
           {messages.length === 0 ? (
             <div className="empty-chat">
-              <h2 
-                className="welcome-title" 
-                onClick={handleTitleClick}
-                title="Click for a surprise!"
-              >
+              <h2 className="welcome-title">
                 The Always Laughing Smile
               </h2>
               <p>
