@@ -22,7 +22,7 @@ function App() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [darkMode, setDarkMode] = useState(false);
+  const [darkMode, setDarkMode] = useState(true); // Default to dark mode
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [newSessionName, setNewSessionName] = useState('');
   const [isRenaming, setIsRenaming] = useState(false);
@@ -64,7 +64,8 @@ function App() {
       createNewSession();
     }
 
-    if (savedTheme) {
+    // Only set dark mode from localStorage if it exists, otherwise use default (true)
+    if (savedTheme !== null) {
       setDarkMode(savedTheme === 'true');
     }
   }, []);
@@ -82,8 +83,10 @@ function App() {
     localStorage.setItem('darkMode', darkMode.toString());
     if (darkMode) {
       document.body.classList.add('dark-mode');
+      document.body.classList.remove('light-mode');
     } else {
       document.body.classList.remove('dark-mode');
+      document.body.classList.add('light-mode');
     }
   }, [darkMode]);
 
@@ -297,7 +300,7 @@ function App() {
   const currentSession = sessions.find(s => s.id === currentSessionId);
 
   return (
-    <div className={`App ${darkMode ? 'dark-mode' : ''}`}>
+    <div className={`App ${darkMode ? 'dark-mode' : 'light-mode'}`}>
       {/* Sidebar */}
       <div className={`sidebar ${sidebarOpen ? 'sidebar-open' : ''}`}>
         <div className="sidebar-header">
@@ -363,15 +366,17 @@ function App() {
             <h1>{currentSession?.title || 'Higher Self'}</h1>
           </div>
           <div className="App-header-actions">
-            <label className="toggle-switch">
+            <label className="toggle-switch" title={darkMode ? "Switch to light mode" : "Switch to dark mode"}>
               <input 
                 type="checkbox" 
                 checked={darkMode}
                 onChange={toggleDarkMode}
               />
-              <span className="toggle-slider"></span>
+              <span className="toggle-slider">
+                <span className="toggle-icon">{darkMode ? '🌙' : '☀️'}</span>
+              </span>
             </label>
-            <button onClick={clearChat} className="clear-button">
+            <button onClick={clearChat} className="clear-button" title="Clear current chat">
               <span className="clear-icon">🗑️</span>
               Clear Chat
             </button>
@@ -411,9 +416,11 @@ function App() {
                     <div className={`message-avatar ${isUser ? 'user-avatar' : 'assistant-avatar'}`}>
                       {isUser ? 'U' : 'H'}
                     </div>
-                    <div className="message-content">{message.content}</div>
-                    <div className="message-timestamp">
-                      {formatTime(message.timestamp)}
+                    <div className="message-bubble">
+                      <div className="message-content">{message.content}</div>
+                      <div className="message-timestamp">
+                        {formatTime(message.timestamp)}
+                      </div>
                     </div>
                   </div>
                 );
@@ -421,10 +428,12 @@ function App() {
               {isLoading && (
                 <div className="message assistant-message slide-in">
                   <div className="message-avatar assistant-avatar">H</div>
-                  <div className="typing-indicator">
-                    <span></span>
-                    <span></span>
-                    <span></span>
+                  <div className="message-bubble">
+                    <div className="typing-indicator">
+                      <span></span>
+                      <span></span>
+                      <span></span>
+                    </div>
                   </div>
                 </div>
               )}
@@ -446,9 +455,10 @@ function App() {
             <button 
               onClick={() => handleSendMessage()}
               disabled={!input.trim() || isLoading}
+              title="Send message"
             >
               {isLoading ? 'Sending...' : 'Send'}
-              {!isLoading && <span>➤</span>}
+              {!isLoading && <span className="send-icon">➤</span>}
             </button>
           </div>
         </div>
