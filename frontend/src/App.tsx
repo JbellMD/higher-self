@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import './App.css';
 
 interface Message {
@@ -8,32 +8,198 @@ interface Message {
   timestamp: string;
 }
 
+interface ChatSession {
+  id: string;
+  title: string;
+  messages: Message[];
+  createdAt: string;
+  updatedAt: string;
+}
+
 function App() {
+  const [sessions, setSessions] = useState<ChatSession[]>([]);
+  const [currentSessionId, setCurrentSessionId] = useState<string>('');
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [darkMode, setDarkMode] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [newSessionName, setNewSessionName] = useState('');
+  const [isRenaming, setIsRenaming] = useState(false);
+  const [sessionToRename, setSessionToRename] = useState<string | null>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
   const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
-  // Load messages from localStorage on initial render
+  // Sample suggested prompts
+  const suggestedPrompts = [
+    "What is the meaning of life?",
+    "How can I be more mindful?",
+    "Tell me about consciousness",
+    "How can I improve my meditation practice?"
+  ];
+
+  // Load data from localStorage on initial render
   useEffect(() => {
-    const savedMessages = localStorage.getItem('chatMessages');
-    if (savedMessages) {
-      setMessages(JSON.parse(savedMessages));
+    const savedSessions = localStorage.getItem('chatSessions');
+    const savedCurrentSession = localStorage.getItem('currentSessionId');
+    const savedTheme = localStorage.getItem('darkMode');
+
+    if (savedSessions) {
+      const parsedSessions = JSON.parse(savedSessions);
+      setSessions(parsedSessions);
+      
+      if (savedCurrentSession && parsedSessions.some((s: ChatSession) => s.id === savedCurrentSession)) {
+        setCurrentSessionId(savedCurrentSession);
+        const currentSession = parsedSessions.find((s: ChatSession) => s.id === savedCurrentSession);
+        if (currentSession) {
+          setMessages(currentSession.messages);
+        }
+      } else if (parsedSessions.length > 0) {
+        // If no current session is saved or it doesn't exist, use the first session
+        setCurrentSessionId(parsedSessions[0].id);
+        setMessages(parsedSessions[0].messages);
+      }
+    } else {
+      // Create a default session if none exist
+      createNewSession();
+    }
+
+    if (savedTheme) {
+      setDarkMode(savedTheme === 'true');
     }
   }, []);
 
-  // Save messages to localStorage whenever they change
+  // Save sessions to localStorage whenever they change
   useEffect(() => {
-    localStorage.setItem('chatMessages', JSON.stringify(messages));
+    if (sessions.length > 0) {
+      localStorage.setItem('chatSessions', JSON.stringify(sessions));
+      localStorage.setItem('currentSessionId', currentSessionId);
+    }
+  }, [sessions, currentSessionId]);
+
+  // Save theme preference to localStorage
+  useEffect(() => {
+    localStorage.setItem('darkMode', darkMode.toString());
+    if (darkMode) {
+      document.body.classList.add('dark-mode');
+    } else {
+      document.body.classList.remove('dark-mode');
+    }
+  }, [darkMode]);
+
+  // Scroll to bottom when messages change
+  useEffect(() => {
+    scrollToBottom();
   }, [messages]);
 
-  const handleSendMessage = async () => {
-    if (!input.trim() || isLoading) return;
+  // Update current session messages when messages change
+  useEffect(() => {
+    if (currentSessionId && messages.length >= 0) {
+      setSessions(prevSessions => 
+        prevSessions.map(session => 
+          session.id === currentSessionId 
+            ? { 
+                ...session, 
+                messages, 
+                updatedAt: new Date().toISOString(),
+                title: session.title === 'New Chat' && messages.length > 0 
+                  ? truncateTitle(messages[0].content) 
+                  : session.title
+              } 
+            : session
+        )
+      );
+    }
+  }, [messages, currentSessionId]);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  const createNewSession = () => {
+    const newSession: ChatSession = {
+      id: Date.now().toString(),
+      title: 'New Chat',
+      messages: [],
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+
+    setSessions(prev => [...prev, newSession]);
+    setCurrentSessionId(newSession.id);
+    setMessages([]);
+    setSidebarOpen(false);
+  };
+
+  const selectSession = (sessionId: string) => {
+    const session = sessions.find(s => s.id === sessionId);
+    if (session) {
+      setCurrentSessionId(sessionId);
+      setMessages(session.messages);
+      setSidebarOpen(false);
+    }
+  };
+
+  const deleteSession = (sessionId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    
+    // Filter out the session to delete
+    const updatedSessions = sessions.filter(session => session.id !== sessionId);
+    
+    if (updatedSessions.length === 0) {
+      // If no sessions left, create a new one
+      createNewSession();
+    } else if (currentSessionId === sessionId) {
+      // If current session is deleted, switch to the first available session
+      setCurrentSessionId(updatedSessions[0].id);
+      setMessages(updatedSessions[0].messages);
+    }
+    
+    setSessions(updatedSessions);
+  };
+
+  const startRenameSession = (sessionId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const session = sessions.find(s => s.id === sessionId);
+    if (session) {
+      setSessionToRename(sessionId);
+      setNewSessionName(session.title);
+      setIsRenaming(true);
+    }
+  };
+
+  const confirmRenameSession = () => {
+    if (sessionToRename && newSessionName.trim()) {
+      setSessions(prevSessions => 
+        prevSessions.map(session => 
+          session.id === sessionToRename 
+            ? { ...session, title: newSessionName.trim() } 
+            : session
+        )
+      );
+    }
+    cancelRenameSession();
+  };
+
+  const cancelRenameSession = () => {
+    setIsRenaming(false);
+    setSessionToRename(null);
+    setNewSessionName('');
+  };
+
+  const truncateTitle = (content: string) => {
+    return content.length > 25 ? content.substring(0, 25) + '...' : content;
+  };
+
+  const handleSendMessage = async (content: string = input) => {
+    if ((!content.trim() && !input.trim()) || isLoading) return;
+
+    const messageContent = content.trim() || input.trim();
 
     // Add user message
     const userMessage: Message = {
       id: Date.now().toString(),
-      content: input.trim(),
+      content: messageContent,
       role: 'user',
       timestamp: new Date().toISOString(),
     };
@@ -56,7 +222,7 @@ function App() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          message: userMessage.content,
+          message: messageContent,
           messageHistory,
         }),
       });
@@ -102,62 +268,190 @@ function App() {
 
   const clearChat = () => {
     setMessages([]);
-    localStorage.removeItem('chatMessages');
   };
 
+  const toggleDarkMode = () => {
+    setDarkMode(!darkMode);
+  };
+
+  const toggleSidebar = () => {
+    setSidebarOpen(!sidebarOpen);
+  };
+
+  const handleSuggestionClick = (prompt: string) => {
+    handleSendMessage(prompt);
+  };
+
+  // Function to format the timestamp
+  const formatTime = (timestamp: string) => {
+    const date = new Date(timestamp);
+    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  };
+
+  // Function to format date for sidebar
+  const formatDate = (timestamp: string) => {
+    const date = new Date(timestamp);
+    return date.toLocaleDateString();
+  };
+
+  const currentSession = sessions.find(s => s.id === currentSessionId);
+
   return (
-    <div className="App">
-      <header className="App-header">
-        <h1>Higher Self</h1>
-        <button onClick={clearChat} className="clear-button">Clear Chat</button>
-      </header>
-      
-      <div className="chat-container">
-        {messages.length === 0 ? (
-          <div className="empty-chat">
-            <p>Welcome to Higher Self! Start a conversation by typing a message below.</p>
-          </div>
-        ) : (
-          <div className="messages">
-            {messages.map((message) => (
-              <div 
-                key={message.id} 
-                className={`message ${message.role === 'user' ? 'user-message' : 'assistant-message'}`}
-              >
-                <div className="message-content">{message.content}</div>
-                <div className="message-timestamp">
-                  {new Date(message.timestamp).toLocaleTimeString()}
-                </div>
-              </div>
-            ))}
-            {isLoading && (
-              <div className="message assistant-message">
-                <div className="typing-indicator">
-                  <span></span>
-                  <span></span>
-                  <span></span>
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-      
-      <div className="input-container">
-        <input
-          type="text"
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyPress={handleKeyPress}
-          placeholder="Type your message..."
-          disabled={isLoading}
-        />
-        <button 
-          onClick={handleSendMessage} 
-          disabled={!input.trim() || isLoading}
-        >
-          {isLoading ? 'Sending...' : 'Send'}
+    <div className={`App ${darkMode ? 'dark-mode' : ''}`}>
+      {/* Sidebar */}
+      <div className={`sidebar ${sidebarOpen ? 'sidebar-open' : ''}`}>
+        <div className="sidebar-header">
+          <h2>Chat History</h2>
+          <button className="sidebar-close" onClick={toggleSidebar}>×</button>
+        </div>
+        <button className="new-chat-button" onClick={createNewSession}>
+          <span>+</span> New Chat
         </button>
+        <div className="session-list">
+          {sessions.map(session => (
+            <div 
+              key={session.id} 
+              className={`session-item ${currentSessionId === session.id ? 'active-session' : ''}`}
+              onClick={() => selectSession(session.id)}
+            >
+              <div className="session-info">
+                <div className="session-title">
+                  {sessionToRename === session.id && isRenaming ? (
+                    <div className="rename-session">
+                      <input
+                        type="text"
+                        value={newSessionName}
+                        onChange={(e) => setNewSessionName(e.target.value)}
+                        onKeyPress={(e) => e.key === 'Enter' && confirmRenameSession()}
+                        autoFocus
+                      />
+                      <div className="rename-actions">
+                        <button onClick={confirmRenameSession}>✓</button>
+                        <button onClick={cancelRenameSession}>✕</button>
+                      </div>
+                    </div>
+                  ) : (
+                    session.title
+                  )}
+                </div>
+                <div className="session-date">{formatDate(session.updatedAt)}</div>
+              </div>
+              <div className="session-actions">
+                <button 
+                  className="session-action edit-button" 
+                  onClick={(e) => startRenameSession(session.id, e)}
+                >
+                  ✎
+                </button>
+                <button 
+                  className="session-action delete-button" 
+                  onClick={(e) => deleteSession(session.id, e)}
+                >
+                  🗑️
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Main content */}
+      <div className="main-content">
+        <header className="App-header">
+          <div className="header-left">
+            <button className="menu-button" onClick={toggleSidebar}>☰</button>
+            <h1>{currentSession?.title || 'Higher Self'}</h1>
+          </div>
+          <div className="App-header-actions">
+            <label className="toggle-switch">
+              <input 
+                type="checkbox" 
+                checked={darkMode}
+                onChange={toggleDarkMode}
+              />
+              <span className="toggle-slider"></span>
+            </label>
+            <button onClick={clearChat} className="clear-button">
+              <span className="clear-icon">🗑️</span>
+              Clear Chat
+            </button>
+          </div>
+        </header>
+        
+        <div className="chat-container">
+          {messages.length === 0 ? (
+            <div className="empty-chat">
+              <div className="empty-chat-icon">💭</div>
+              <h2>Welcome to Higher Self</h2>
+              <p>
+                Your AI companion for mindful conversations and personal growth.
+                Start a conversation by typing a message or try one of the suggestions below.
+              </p>
+              <div className="empty-chat-suggestions">
+                {suggestedPrompts.map((prompt, index) => (
+                  <button 
+                    key={index} 
+                    className="suggestion-chip"
+                    onClick={() => handleSuggestionClick(prompt)}
+                  >
+                    {prompt}
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <div className="messages">
+              {messages.map((message) => {
+                const isUser = message.role === 'user';
+                return (
+                  <div 
+                    key={message.id} 
+                    className={`message ${isUser ? 'user-message' : 'assistant-message'} slide-in`}
+                  >
+                    <div className={`message-avatar ${isUser ? 'user-avatar' : 'assistant-avatar'}`}>
+                      {isUser ? 'U' : 'H'}
+                    </div>
+                    <div className="message-content">{message.content}</div>
+                    <div className="message-timestamp">
+                      {formatTime(message.timestamp)}
+                    </div>
+                  </div>
+                );
+              })}
+              {isLoading && (
+                <div className="message assistant-message slide-in">
+                  <div className="message-avatar assistant-avatar">H</div>
+                  <div className="typing-indicator">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                  </div>
+                </div>
+              )}
+              <div ref={messagesEndRef} />
+            </div>
+          )}
+        </div>
+        
+        <div className="input-container">
+          <div className="input-wrapper">
+            <input
+              type="text"
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyPress={handleKeyPress}
+              placeholder="Type your message..."
+              disabled={isLoading}
+            />
+            <button 
+              onClick={() => handleSendMessage()}
+              disabled={!input.trim() || isLoading}
+            >
+              {isLoading ? 'Sending...' : 'Send'}
+              {!isLoading && <span>➤</span>}
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );
