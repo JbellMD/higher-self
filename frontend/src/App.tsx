@@ -14,6 +14,9 @@ interface ChatSession {
   messages: Message[];
   createdAt: string;
   updatedAt: string;
+  tags: string[];
+  isPinned: boolean;
+  category: string;
 }
 
 function App() {
@@ -27,6 +30,14 @@ function App() {
   const [newSessionName, setNewSessionName] = useState('');
   const [isRenaming, setIsRenaming] = useState(false);
   const [sessionToRename, setSessionToRename] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedSessions, setSelectedSessions] = useState<string[]>([]);
+  const [isMultiSelectMode, setIsMultiSelectMode] = useState(false);
+  const [sessionTags, setSessionTags] = useState<string[]>([]);
+  const [newTag, setNewTag] = useState('');
+  const [showTagInput, setShowTagInput] = useState(false);
+  const [categories, setCategories] = useState<string[]>(['General', 'Personal', 'Work', 'Ideas']);
+  const [selectedCategory, setSelectedCategory] = useState('All');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
@@ -115,6 +126,28 @@ function App() {
     }
   }, [messages, currentSessionId]);
 
+  // Filter sessions based on search term, tags, and category
+  const filteredSessions = sessions
+    .filter(session => {
+      // Filter by search term
+      const matchesSearch = searchTerm === '' || 
+        session.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        session.messages.some(msg => msg.content.toLowerCase().includes(searchTerm.toLowerCase()));
+      
+      // Filter by category
+      const matchesCategory = selectedCategory === 'All' || session.category === selectedCategory;
+      
+      return matchesSearch && matchesCategory;
+    })
+    .sort((a, b) => {
+      // Sort by pinned status first (pinned sessions at the top)
+      if (a.isPinned && !b.isPinned) return -1;
+      if (!a.isPinned && b.isPinned) return 1;
+      
+      // Then sort by updated date (newest first)
+      return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
+    });
+
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
@@ -125,7 +158,10 @@ function App() {
       title: 'New Chat',
       messages: [],
       createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
+      updatedAt: new Date().toISOString(),
+      tags: [],
+      isPinned: false,
+      category: 'General'
     };
 
     setSessions(prev => [...prev, newSession]);
@@ -134,7 +170,166 @@ function App() {
     setSidebarOpen(false);
   };
 
+  // Toggle pin status for a session
+  const togglePinSession = (sessionId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setSessions(prevSessions => 
+      prevSessions.map(session => 
+        session.id === sessionId 
+          ? { ...session, isPinned: !session.isPinned } 
+          : session
+      )
+    );
+  };
+
+  // Add tag to current session
+  const addTagToSession = (tag: string) => {
+    if (!tag.trim() || !currentSessionId) return;
+    
+    setSessions(prevSessions => 
+      prevSessions.map(session => 
+        session.id === currentSessionId 
+          ? { 
+              ...session, 
+              tags: session.tags.includes(tag) 
+                ? session.tags 
+                : [...session.tags, tag] 
+            } 
+          : session
+      )
+    );
+    
+    // Add to available tags if it's a new tag
+    if (!sessionTags.includes(tag)) {
+      setSessionTags(prev => [...prev, tag]);
+    }
+    
+    setNewTag('');
+    setShowTagInput(false);
+  };
+
+  // Remove tag from current session
+  const removeTagFromSession = (tag: string) => {
+    setSessions(prevSessions => 
+      prevSessions.map(session => 
+        session.id === currentSessionId 
+          ? { 
+              ...session, 
+              tags: session.tags.filter(t => t !== tag)
+            } 
+          : session
+      )
+    );
+  };
+
+  // Change category of current session
+  const changeSessionCategory = (category: string) => {
+    setSessions(prevSessions => 
+      prevSessions.map(session => 
+        session.id === currentSessionId 
+          ? { ...session, category } 
+          : session
+      )
+    );
+  };
+
+  // Export selected sessions or current session
+  const exportSessions = () => {
+    const sessionsToExport = isMultiSelectMode && selectedSessions.length > 0
+      ? sessions.filter(session => selectedSessions.includes(session.id))
+      : sessions.filter(session => session.id === currentSessionId);
+    
+    const dataStr = JSON.stringify(sessionsToExport, null, 2);
+    const dataUri = `data:application/json;charset=utf-8,${encodeURIComponent(dataStr)}`;
+    
+    const exportFileDefaultName = `smile-history-${new Date().toISOString().slice(0, 10)}.json`;
+    
+    const linkElement = document.createElement('a');
+    linkElement.setAttribute('href', dataUri);
+    linkElement.setAttribute('download', exportFileDefaultName);
+    linkElement.click();
+  };
+
+  // Import sessions from file
+  const importSessions = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const importedSessions = JSON.parse(e.target?.result as string);
+        if (Array.isArray(importedSessions)) {
+          // Generate new IDs to avoid conflicts
+          const newSessions = importedSessions.map(session => ({
+            ...session,
+            id: `imported-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+          }));
+          
+          setSessions(prev => [...prev, ...newSessions]);
+          
+          // Switch to the first imported session
+          if (newSessions.length > 0) {
+            setCurrentSessionId(newSessions[0].id);
+            setMessages(newSessions[0].messages);
+          }
+        }
+      } catch (error) {
+        console.error('Error importing sessions:', error);
+        alert('Failed to import sessions. Please check the file format.');
+      }
+    };
+    reader.readAsText(file);
+    
+    // Reset the input
+    event.target.value = '';
+  };
+
+  // Toggle multi-select mode
+  const toggleMultiSelectMode = () => {
+    setIsMultiSelectMode(!isMultiSelectMode);
+    setSelectedSessions([]);
+  };
+
+  // Toggle session selection in multi-select mode
+  const toggleSessionSelection = (sessionId: string, e: React.MouseEvent) => {
+    if (!isMultiSelectMode) return;
+    
+    e.stopPropagation();
+    setSelectedSessions(prev => 
+      prev.includes(sessionId)
+        ? prev.filter(id => id !== sessionId)
+        : [...prev, sessionId]
+    );
+  };
+
+  // Delete selected sessions
+  const deleteSelectedSessions = () => {
+    if (selectedSessions.length === 0) return;
+    
+    // Filter out the sessions to delete
+    const updatedSessions = sessions.filter(session => !selectedSessions.includes(session.id));
+    
+    if (updatedSessions.length === 0) {
+      // If no sessions left, create a new one
+      createNewSession();
+    } else if (selectedSessions.includes(currentSessionId)) {
+      // If current session is deleted, switch to the first available session
+      setCurrentSessionId(updatedSessions[0].id);
+      setMessages(updatedSessions[0].messages);
+    }
+    
+    setSessions(updatedSessions);
+    setSelectedSessions([]);
+    setIsMultiSelectMode(false);
+  };
+
   const selectSession = (sessionId: string) => {
+    if (isMultiSelectMode) {
+      toggleSessionSelection(sessionId, {} as React.MouseEvent);
+      return;
+    }
+    
     const session = sessions.find(s => s.id === sessionId);
     if (session) {
       setCurrentSessionId(sessionId);
@@ -311,16 +506,30 @@ function App() {
           <span>+</span> New Smile
         </button>
         <div className="session-list">
-          {sessions.map(session => (
+          {filteredSessions.map(session => (
             <div 
               key={session.id} 
-              className={`session-item ${currentSessionId === session.id ? 'active-session' : ''}`}
+              className={`session-item ${currentSessionId === session.id ? 'active-session' : ''} ${selectedSessions.includes(session.id) ? 'selected' : ''}`}
               onClick={() => selectSession(session.id)}
             >
+              {isMultiSelectMode && (
+                <input 
+                  type="checkbox"
+                  className="multi-select-checkbox"
+                  checked={selectedSessions.includes(session.id)}
+                  onChange={(e) => {
+                    e.stopPropagation();
+                    toggleSessionSelection(session.id, e as unknown as React.MouseEvent);
+                  }}
+                />
+              )}
+              
+              {session.isPinned && <span className="pinned-indicator">📌</span>}
+              
               <div className="session-info">
                 <div className="session-title">
-                  {sessionToRename === session.id && isRenaming ? (
-                    <div className="rename-session">
+                  {isRenaming && sessionToRename === session.id ? (
+                    <div className="rename-input-container" onClick={(e) => e.stopPropagation()}>
                       <input
                         type="text"
                         value={newSessionName}
@@ -334,27 +543,95 @@ function App() {
                       </div>
                     </div>
                   ) : (
-                    session.title
+                    <span>{session.title}</span>
                   )}
                 </div>
-                <div className="session-date">{formatDate(session.updatedAt)}</div>
+                <div className="session-meta">
+                  <span className="session-date">{formatDate(session.updatedAt)}</span>
+                  {session.tags.length > 0 && (
+                    <div className="session-item-tags">
+                      {session.tags.slice(0, 2).map(tag => (
+                        <span key={tag} className="session-item-tag">{tag}</span>
+                      ))}
+                      {session.tags.length > 2 && (
+                        <span className="session-item-tag">+{session.tags.length - 2}</span>
+                      )}
+                    </div>
+                  )}
+                  <span className="session-category-badge">{session.category}</span>
+                </div>
               </div>
+              
               <div className="session-actions">
-                <button 
-                  className="session-action edit-button" 
-                  onClick={(e) => startRenameSession(session.id, e)}
-                >
-                  ✎
-                </button>
-                <button 
-                  className="session-action delete-button" 
-                  onClick={(e) => deleteSession(session.id, e)}
-                >
-                  🗑️
-                </button>
+                {!isMultiSelectMode && (
+                  <>
+                    <button 
+                      className="session-action rename-button" 
+                      onClick={(e) => startRenameSession(session.id, e)}
+                    >
+                      ✏️
+                    </button>
+                    <button 
+                      className="session-action delete-button" 
+                      onClick={(e) => deleteSession(session.id, e)}
+                    >
+                      🗑️
+                    </button>
+                    <button 
+                      className="session-action pin-button" 
+                      onClick={(e) => togglePinSession(session.id, e)}
+                    >
+                      {session.isPinned ? '📌' : '📋'}
+                    </button>
+                  </>
+                )}
               </div>
             </div>
           ))}
+        </div>
+        <div className="session-filters">
+          <input 
+            type="text" 
+            value={searchTerm} 
+            onChange={(e) => setSearchTerm(e.target.value)} 
+            placeholder="Search sessions"
+          />
+          <select 
+            value={selectedCategory} 
+            onChange={(e) => setSelectedCategory(e.target.value)}
+          >
+            <option value="All">All Categories</option>
+            {categories.map(category => (
+              <option key={category} value={category}>{category}</option>
+            ))}
+          </select>
+          <div className="session-actions">
+            <button 
+              onClick={toggleMultiSelectMode} 
+              className="multi-select-button" 
+              title={isMultiSelectMode ? "Exit selection mode" : "Select multiple sessions"}
+            >
+              {isMultiSelectMode ? 'Exit Selection' : 'Select Multiple'}
+            </button>
+            {isMultiSelectMode && selectedSessions.length > 0 && (
+              <button 
+                onClick={deleteSelectedSessions} 
+                className="delete-selected-button" 
+                title="Delete selected sessions"
+              >
+                Delete Selected ({selectedSessions.length})
+              </button>
+            )}
+            <label className="import-button" title="Import sessions">
+              Import
+              <input 
+                type="file" 
+                accept=".json" 
+                onChange={importSessions}
+                style={{ display: 'none' }}
+              />
+            </label>
+          </div>
         </div>
       </div>
 
@@ -380,6 +657,32 @@ function App() {
               <span className="clear-icon">🗑️</span>
               Clear Smile
             </button>
+            <button onClick={exportSessions} className="export-button" title="Export sessions">
+              <span className="export-icon">📁</span>
+              Export
+            </button>
+            <input 
+              type="file" 
+              accept=".json" 
+              onChange={importSessions} 
+              title="Import sessions"
+            />
+            <button 
+              onClick={toggleMultiSelectMode} 
+              className="multi-select-button" 
+              title="Toggle multi-select mode"
+            >
+              {isMultiSelectMode ? '✕' : '🗑️'}
+            </button>
+            {isMultiSelectMode && (
+              <button 
+                onClick={deleteSelectedSessions} 
+                className="delete-selected-button" 
+                title="Delete selected sessions"
+              >
+                🗑️
+              </button>
+            )}
           </div>
         </header>
         
@@ -404,40 +707,96 @@ function App() {
               </div>
             </div>
           ) : (
-            <div className="messages">
-              {messages.map((message) => {
-                const isUser = message.role === 'user';
-                return (
-                  <div 
-                    key={message.id} 
-                    className={`message ${isUser ? 'user-message' : 'assistant-message'} slide-in`}
-                  >
-                    <div className={`message-avatar ${isUser ? 'user-avatar' : 'assistant-avatar'}`}>
-                      {isUser ? 'U' : 'H'}
+            <>
+              {/* Session metadata section */}
+              <div className="session-metadata">
+                {currentSession && (
+                  <>
+                    <div className="session-category">
+                      <label>Category:</label>
+                      <select 
+                        value={currentSession.category} 
+                        onChange={(e) => changeSessionCategory(e.target.value)}
+                      >
+                        {categories.map(category => (
+                          <option key={category} value={category}>{category}</option>
+                        ))}
+                      </select>
                     </div>
+                    
+                    <div className="session-tags">
+                      <div className="tags-container">
+                        {currentSession.tags.map(tag => (
+                          <div key={tag} className="tag">
+                            <span>{tag}</span>
+                            <button onClick={() => removeTagFromSession(tag)}>×</button>
+                          </div>
+                        ))}
+                        
+                        {showTagInput ? (
+                          <div className="tag-input-container">
+                            <input
+                              type="text"
+                              value={newTag}
+                              onChange={(e) => setNewTag(e.target.value)}
+                              onKeyPress={(e) => e.key === 'Enter' && addTagToSession(newTag)}
+                              placeholder="Add tag..."
+                              autoFocus
+                            />
+                            <div className="tag-actions">
+                              <button onClick={() => addTagToSession(newTag)}>✓</button>
+                              <button onClick={() => setShowTagInput(false)}>✕</button>
+                            </div>
+                          </div>
+                        ) : (
+                          <button 
+                            className="add-tag-button" 
+                            onClick={() => setShowTagInput(true)}
+                          >
+                            + Add Tag
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
+              
+              <div className="messages">
+                {messages.map((message) => {
+                  const isUser = message.role === 'user';
+                  return (
+                    <div 
+                      key={message.id} 
+                      className={`message ${isUser ? 'user-message' : 'assistant-message'} slide-in`}
+                    >
+                      <div className={`message-avatar ${isUser ? 'user-avatar' : 'assistant-avatar'}`}>
+                        {isUser ? 'U' : 'H'}
+                      </div>
+                      <div className="message-bubble">
+                        <div className="message-content">{message.content}</div>
+                        <div className="message-timestamp">
+                          {formatTime(message.timestamp)}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+                {isLoading && (
+                  <div className="message assistant-message slide-in">
+                    <div className="message-avatar assistant-avatar">H</div>
                     <div className="message-bubble">
-                      <div className="message-content">{message.content}</div>
-                      <div className="message-timestamp">
-                        {formatTime(message.timestamp)}
+                      <div className="typing-indicator">
+                        <span></span>
+                        <span></span>
+                        <span></span>
                       </div>
                     </div>
                   </div>
-                );
-              })}
-              {isLoading && (
-                <div className="message assistant-message slide-in">
-                  <div className="message-avatar assistant-avatar">H</div>
-                  <div className="message-bubble">
-                    <div className="typing-indicator">
-                      <span></span>
-                      <span></span>
-                      <span></span>
-                    </div>
-                  </div>
-                </div>
-              )}
-              <div ref={messagesEndRef} />
-            </div>
+                )}
+                <div ref={messagesEndRef} />
+              </div>
+            </>
           )}
         </div>
         
