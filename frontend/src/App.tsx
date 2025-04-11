@@ -442,24 +442,24 @@ function App() {
         </div>
         
         <div className="input-container">
-          <div className="input-wrapper">
-            <input
-              type="text"
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyPress={handleKeyPress}
-              placeholder="Share your thoughts with a smile..."
-              disabled={isLoading}
-            />
-            <button 
-              onClick={() => handleSendMessage()}
-              disabled={!input.trim() || isLoading}
-              title="Send message"
-            >
-              {isLoading ? 'Sending...' : 'Send'}
-              {!isLoading && <span className="send-icon">➤</span>}
-            </button>
-          </div>
+          <input
+            type="text"
+            className="chat-input"
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyPress={handleKeyPress}
+            placeholder="Share your thoughts with a smile..."
+            disabled={isLoading}
+          />
+          <button 
+            className="send-button"
+            onClick={() => handleSendMessage()}
+            disabled={!input.trim() || isLoading}
+            title="Send message"
+          >
+            {!isLoading && <span className="send-icon">➤</span>}
+            {isLoading && <span className="loading-icon">...</span>}
+          </button>
         </div>
       </div>
     </div>

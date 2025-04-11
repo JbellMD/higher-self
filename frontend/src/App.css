@@ -60,6 +60,7 @@ body {
   flex-direction: column;
   height: 100vh;
   overflow: hidden;
+  position: relative;
 }
 
 /* Remove the shooting star animations */
@@ -105,20 +106,32 @@ body {
 .sidebar {
   width: 300px;
   height: 100vh;
-  background-color: var(--sidebar-bg);
+  background-color: #000000;
   position: fixed;
   left: -300px;
   top: 0;
   z-index: 1000;
   transition: left var(--transition-speed) cubic-bezier(0.175, 0.885, 0.32, 1.275);
-  box-shadow: 2px 0 10px var(--shadow-color);
+  box-shadow: 2px 0 10px rgba(0, 0, 0, 0.5);
   display: flex;
   flex-direction: column;
-  backdrop-filter: blur(10px);
+  border-right: 1px solid rgba(30, 58, 95, 0.5);
 }
 
 .sidebar-open {
   left: 0;
+}
+
+.main-content {
+  flex: 1;
+  transition: margin-left var(--transition-speed) cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  width: 100%;
+  position: relative;
+}
+
+.sidebar-open + .main-content {
+  margin-left: 300px;
+  width: calc(100% - 300px);
 }
 
 .sidebar-header {
@@ -126,7 +139,10 @@ body {
   justify-content: space-between;
   align-items: center;
   padding: 15px;
-  border-bottom: 1px solid var(--border-color);
+  background-color: #000000;
+  border-bottom: 1px solid rgba(30, 58, 95, 0.5);
+  color: white;
+  text-shadow: 0 0 10px rgba(30, 58, 95, 0.8);
 }
 
 .sidebar-close {
@@ -134,20 +150,22 @@ body {
   border: none;
   font-size: 24px;
   cursor: pointer;
-  color: var(--text-color);
+  color: white;
+  text-shadow: 0 0 10px rgba(30, 58, 95, 0.8);
   transition: transform 0.2s ease;
 }
 
 .sidebar-close:hover {
   transform: rotate(90deg);
+  color: rgba(30, 58, 95, 1);
 }
 
 .new-chat-button {
   margin: 15px;
   padding: 10px;
-  background-color: var(--primary-color);
+  background-color: rgba(30, 58, 95, 0.3);
   color: white;
-  border: none;
+  border: 1px solid rgba(30, 58, 95, 0.5);
   border-radius: 5px;
   cursor: pointer;
   display: flex;
@@ -155,18 +173,14 @@ body {
   justify-content: center;
   gap: 8px;
   transition: all 0.2s ease;
-  box-shadow: 0 2px 5px var(--shadow-color);
+  box-shadow: 0 0 10px rgba(30, 58, 95, 0.3);
+  text-shadow: 0 0 10px rgba(30, 58, 95, 0.8);
 }
 
 .new-chat-button:hover {
-  background-color: var(--primary-light);
+  background-color: rgba(30, 58, 95, 0.5);
   transform: translateY(-2px);
-  box-shadow: 0 4px 8px var(--shadow-color);
-}
-
-.new-chat-button:active {
-  transform: translateY(0);
-  box-shadow: 0 2px 3px var(--shadow-color);
+  box-shadow: 0 0 15px rgba(30, 58, 95, 0.5);
 }
 
 .session-list {
@@ -185,16 +199,21 @@ body {
   cursor: pointer;
   transition: all 0.2s ease;
   border: 1px solid transparent;
+  color: white;
+  text-shadow: 0 0 10px rgba(30, 58, 95, 0.5);
 }
 
 .session-item:hover {
-  background-color: var(--sidebar-hover);
+  background-color: rgba(30, 58, 95, 0.2);
   transform: translateX(3px);
+  border: 1px solid rgba(30, 58, 95, 0.3);
+  text-shadow: 0 0 15px rgba(30, 58, 95, 0.8);
 }
 
 .active-session {
-  background-color: var(--sidebar-active);
-  border-left: 3px solid var(--accent-color);
+  background-color: rgba(30, 58, 95, 0.3);
+  border-left: 3px solid rgba(30, 58, 95, 0.8);
+  text-shadow: 0 0 15px rgba(30, 58, 95, 0.8);
 }
 
 .session-info {
@@ -207,12 +226,15 @@ body {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  color: white;
+  text-shadow: 0 0 10px rgba(30, 58, 95, 0.5);
 }
 
 .session-date {
   font-size: 0.8rem;
-  color: var(--text-light);
+  color: rgba(255, 255, 255, 0.6);
   margin-top: 3px;
+  text-shadow: 0 0 5px rgba(30, 58, 95, 0.3);
 }
 
 .session-actions {
@@ -234,10 +256,12 @@ body {
   padding: 3px 5px;
   border-radius: 3px;
   transition: background-color 0.2s;
+  color: white;
+  text-shadow: 0 0 10px rgba(30, 58, 95, 0.5);
 }
 
 .session-action:hover {
-  background-color: var(--border-color);
+  background-color: rgba(30, 58, 95, 0.3);
 }
 
 .rename-session {
@@ -249,10 +273,11 @@ body {
 .rename-session input {
   flex: 1;
   padding: 3px 5px;
-  border: 1px solid var(--border-color);
+  border: 1px solid rgba(30, 58, 95, 0.5);
   border-radius: 3px;
-  background-color: var(--input-bg);
-  color: var(--text-color);
+  background-color: rgba(0, 0, 0, 0.7);
+  color: white;
+  text-shadow: 0 0 5px rgba(30, 58, 95, 0.3);
 }
 
 .rename-actions {
@@ -266,14 +291,17 @@ body {
   cursor: pointer;
   padding: 2px 5px;
   border-radius: 3px;
+  text-shadow: 0 0 10px rgba(30, 58, 95, 0.5);
 }
 
 .rename-actions button:first-child {
-  color: green;
+  color: #4CAF50;
+  text-shadow: 0 0 10px rgba(76, 175, 80, 0.5);
 }
 
 .rename-actions button:last-child {
-  color: red;
+  color: #F44336;
+  text-shadow: 0 0 10px rgba(244, 67, 54, 0.5);
 }
 
 /* Main Content Styles */
@@ -445,17 +473,18 @@ input:checked + .toggle-slider:before {
 
 .chat-container {
   flex: 1;
-  padding: 20px;
   overflow-y: auto;
+  padding: 20px;
+  padding-bottom: 80px; /* Add more padding to account for fixed input bar */
+  height: calc(100vh - 60px); /* Adjust height to account for header */
   background-color: var(--chat-background);
   transition: background-color var(--transition-speed);
   background-image: 
-    radial-gradient(circle at 25% 25%, rgba(255, 255, 255, 0.1) 1px, transparent 1px),
-    radial-gradient(circle at 75% 75%, rgba(255, 255, 255, 0.1) 1px, transparent 1px);
+    radial-gradient(circle at 25% 25%, rgba(255, 255, 255, 0.2) 1px, transparent 1px),
+    radial-gradient(circle at 75% 75%, rgba(255, 255, 255, 0.2) 1px, transparent 1px);
   background-size: 30px 30px;
   scroll-behavior: smooth;
   position: relative;
-  padding-bottom: 20px;
 }
 
 .chat-container::before {
@@ -504,12 +533,12 @@ input:checked + .toggle-slider:before {
   align-items: center;
   justify-content: center;
   height: 100%;
-  text-align: center;
   padding: 0 20px;
   max-width: 600px;
   margin: 0 auto;
   position: relative;
   z-index: 1;
+  margin-top: -60px; /* Adjust to center content better */
 }
 
 .empty-chat-icon {
@@ -593,6 +622,8 @@ input:checked + .toggle-slider:before {
   flex-wrap: wrap;
   gap: 10px;
   justify-content: center;
+  margin-top: 10px;
+  max-width: 600px;
 }
 
 .suggestion-chip {
@@ -779,16 +810,26 @@ input:checked + .toggle-slider:before {
   padding: 15px;
   background-color: #000000;
   border-top: 1px solid rgba(30, 58, 95, 0.5);
-  position: sticky;
+  position: fixed;
   bottom: 0;
-  z-index: 10;
+  left: 0;
+  right: 0;
+  z-index: 100;
   width: 100%;
+  box-sizing: border-box;
+  transition: left var(--transition-speed) cubic-bezier(0.175, 0.885, 0.32, 1.275), width var(--transition-speed) cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.sidebar-open ~ .input-container {
+  left: 300px;
+  width: calc(100% - 300px);
 }
 
 .chat-input {
   flex-grow: 1;
-  padding: 15px;
-  border-radius: 20px;
+  height: 60px; /* Increased height */
+  padding: 0 20px;
+  border-radius: 30px; /* Adjusted for increased height */
   background-color: rgba(0, 0, 0, 0.7);
   border: 1px solid rgba(30, 58, 95, 0.5);
   color: white;
@@ -814,14 +855,15 @@ input:checked + .toggle-slider:before {
   color: white;
   text-shadow: 0 0 10px rgba(30, 58, 95, 0.8);
   border-radius: 50%;
-  width: 50px;
-  height: 50px;
+  width: 60px; /* Increased size to match input height */
+  height: 60px; /* Increased size to match input height */
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   transition: all 0.3s ease;
   flex-shrink: 0;
+  background-color: rgba(0, 0, 0, 0.7);
 }
 
 .send-button:hover {
