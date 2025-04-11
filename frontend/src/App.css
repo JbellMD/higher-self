@@ -6,9 +6,9 @@
 }
 
 :root {
-  --primary-color: #333333;
-  --primary-light: #555555;
-  --primary-dark: #222222;
+  --primary-color: #4a6fa5;
+  --primary-light: #6a8fc5;
+  --primary-dark: #3a5f95;
   --text-color: #333;
   --text-light: #666;
   --background-color: #f8f9fa;
@@ -28,24 +28,24 @@
 }
 
 .dark-mode {
-  --primary-color: #333333;
-  --primary-light: #444444;
-  --primary-dark: #222222;
+  --primary-color: #6a8fc5;
+  --primary-light: #8aafef;
+  --primary-dark: #4a6fa5;
   --text-color: #e0e0e0;
   --text-light: #b0b0b0;
   --background-color: #121212;
   --chat-background: #1a1a2e;
-  --user-message-bg: rgba(42, 58, 74, 0.8);
+  --user-message-bg: rgba(74, 111, 165, 0.8);
   --assistant-message-bg: rgba(42, 42, 62, 0.8);
   --border-color: #444;
   --input-bg: #333;
   --shadow-color: rgba(0, 0, 0, 0.3);
-  --user-avatar-bg: #4a6fa5;
-  --assistant-avatar-bg: #444444;
+  --user-avatar-bg: #6a8fc5;
+  --assistant-avatar-bg: #444466;
   --sidebar-bg: #1a1a2e;
   --sidebar-hover: #252542;
   --sidebar-active: #333355;
-  --accent-color: #4a6fa5;
+  --accent-color: #8aafef;
 }
 
 .light-mode {
@@ -140,6 +140,66 @@ body {
 .dark-mode .chat-container .shooting-star-2 {
   background: linear-gradient(to right, rgba(255, 255, 255, 0), rgba(255, 255, 255, 1));
   box-shadow: 0 0 8px white;
+}
+
+/* Special shooting star animation for title click */
+.shooting-star-special {
+  position: absolute;
+  width: 4px;
+  height: 4px;
+  background-color: white;
+  border-radius: 50%;
+  box-shadow: 0 0 10px 2px rgba(255, 255, 255, 0.8), 
+              0 0 20px 5px rgba(138, 175, 239, 0.6),
+              0 0 30px 10px rgba(170, 154, 255, 0.4);
+  z-index: 1;
+  pointer-events: none;
+  animation: shooting-star-special 2s ease-out forwards;
+}
+
+@keyframes shooting-star-special {
+  0% {
+    transform: scale(0.1);
+    opacity: 0;
+  }
+  10% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  60% {
+    transform: scale(1.2);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(0);
+    opacity: 0;
+  }
+}
+
+/* Add a subtle pulsing glow to the stars */
+.star::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background-color: white;
+  opacity: 0;
+  animation: star-pulse 3s infinite ease-in-out;
+  animation-delay: calc(var(--star-delay) * 1s);
+}
+
+@keyframes star-pulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(2);
+    opacity: 0.3;
+  }
 }
 
 /* Custom Scrollbar */
@@ -656,23 +716,37 @@ input:checked + .toggle-slider:before {
 
 .welcome-title {
   margin-bottom: 25px;
-  font-size: 2.5rem;
-  background: linear-gradient(45deg, #4a6fa5, #8a7aed, #4a6fa5);
+  font-size: 3rem;
+  background: linear-gradient(45deg, #8aafef, #aa9aff, #8aafef);
   background-size: 200% auto;
-  color: transparent !important;
-  -webkit-background-clip: text;
-  background-clip: text;
-  animation: gradient 3s ease infinite, pulse 2s ease-in-out infinite;
-  text-shadow: 0 0 15px rgba(74, 111, 165, 0.5);
+  color: white !important;
+  text-shadow: 0 0 15px rgba(106, 143, 197, 0.7), 0 0 30px rgba(106, 143, 197, 0.4);
   font-weight: 700;
   letter-spacing: 1px;
   position: relative;
   display: inline-block;
+  padding: 15px 30px;
+  border-radius: 15px;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3), 0 0 30px rgba(106, 143, 197, 0.3);
+  animation: pulse 2s ease-in-out infinite, gradient 3s ease infinite;
+  backdrop-filter: blur(5px);
+  background-color: rgba(26, 26, 46, 0.7);
+  border: 1px solid rgba(138, 175, 239, 0.5);
+  z-index: 2;
+}
+
+.welcome-title:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4), 0 0 40px rgba(106, 143, 197, 0.4);
+  cursor: pointer;
 }
 
 .dark-mode .welcome-title {
-  background: linear-gradient(45deg, #6a8fc5, #aa9aff, #6a8fc5);
-  text-shadow: 0 0 20px rgba(106, 143, 197, 0.7);
+  background: linear-gradient(45deg, #8aafef, #aa9aff, #8aafef);
+  background-size: 200% auto;
+  animation: gradient 3s ease infinite, pulse 2s ease-in-out infinite;
+  text-shadow: 0 0 20px rgba(138, 175, 239, 0.7), 0 0 40px rgba(138, 175, 239, 0.4);
+  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.5), 0 0 30px rgba(138, 175, 239, 0.3);
 }
 
 .welcome-title::after {
@@ -718,15 +792,23 @@ input:checked + .toggle-slider:before {
 
 .empty-chat p {
   margin-bottom: 25px;
-  color: var(--text-light);
+  color: rgba(255, 255, 255, 0.9);
   line-height: 1.6;
   font-size: 1.1rem;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
   max-width: 80%;
+  background-color: rgba(26, 26, 46, 0.7);
+  padding: 20px;
+  border-radius: 15px;
+  backdrop-filter: blur(5px);
+  border: 1px solid rgba(138, 175, 239, 0.3);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
 }
 
 .dark-mode .empty-chat p {
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+  color: rgba(255, 255, 255, 0.9);
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+  background-color: rgba(26, 26, 46, 0.7);
 }
 
 .empty-chat-suggestions {
@@ -737,17 +819,19 @@ input:checked + .toggle-slider:before {
 }
 
 .suggestion-chip {
-  background-color: var(--primary-light);
+  background: linear-gradient(45deg, #6a8fc5, #8aafef);
   color: white;
-  padding: 10px 18px;
+  padding: 12px 20px;
   border-radius: 20px;
   border: none;
   cursor: pointer;
   transition: all 0.3s ease;
-  box-shadow: 0 2px 5px var(--shadow-color);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3), 0 0 4px rgba(255, 255, 255, 0.1) inset;
   font-weight: 500;
   position: relative;
   overflow: hidden;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+  font-size: 1rem;
 }
 
 .suggestion-chip::before {
@@ -770,17 +854,16 @@ input:checked + .toggle-slider:before {
 
 .suggestion-chip:hover {
   transform: translateY(-3px) scale(1.03);
-  box-shadow: 0 4px 15px var(--shadow-color);
-  background-color: var(--primary-color);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3), 0 0 6px rgba(255, 255, 255, 0.2) inset;
 }
 
 .dark-mode .suggestion-chip {
-  background: linear-gradient(45deg, #333355, #444466);
+  background: linear-gradient(45deg, #6a8fc5, #8aafef);
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3), 0 0 4px rgba(255, 255, 255, 0.1) inset;
 }
 
 .dark-mode .suggestion-chip:hover {
-  background: linear-gradient(45deg, #444466, #555577);
+  background: linear-gradient(45deg, #8aafef, #aa9aff);
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4), 0 0 6px rgba(255, 255, 255, 0.2) inset;
 }
 
