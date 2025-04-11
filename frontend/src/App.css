@@ -57,10 +57,9 @@ body {
 
 .App {
   display: flex;
+  flex-direction: column;
   height: 100vh;
-  width: 100vw;
   overflow: hidden;
-  position: relative;
 }
 
 /* Remove the shooting star animations */
@@ -456,6 +455,7 @@ input:checked + .toggle-slider:before {
   background-size: 30px 30px;
   scroll-behavior: smooth;
   position: relative;
+  padding-bottom: 20px;
 }
 
 .chat-container::before {
@@ -537,8 +537,8 @@ input:checked + .toggle-slider:before {
 }
 
 .welcome-title {
-  margin-bottom: 25px;
-  font-size: 3.5rem;
+  margin-bottom: 30px;
+  font-size: 2.5rem;
   color: white !important;
   text-shadow: 0 0 15px rgba(30, 58, 95, 1), 0 0 30px rgba(30, 58, 95, 0.8), 0 0 45px rgba(30, 58, 95, 0.6);
   font-weight: 700;
@@ -550,6 +550,7 @@ input:checked + .toggle-slider:before {
   border: none;
   box-shadow: none;
   padding: 0;
+  white-space: nowrap;
 }
 
 .welcome-title:hover {
@@ -781,6 +782,7 @@ input:checked + .toggle-slider:before {
   position: sticky;
   bottom: 0;
   z-index: 10;
+  width: 100%;
 }
 
 .chat-input {
@@ -794,6 +796,7 @@ input:checked + .toggle-slider:before {
   outline: none;
   transition: all 0.3s ease;
   margin-right: 10px;
+  text-shadow: 0 0 5px rgba(30, 58, 95, 0.5);
 }
 
 .chat-input:focus {
@@ -818,6 +821,7 @@ input:checked + .toggle-slider:before {
   justify-content: center;
   cursor: pointer;
   transition: all 0.3s ease;
+  flex-shrink: 0;
 }
 
 .send-button:hover {

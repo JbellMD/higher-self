@@ -390,10 +390,7 @@ function App() {
               <h2 className="welcome-title">
                 The Always Laughing Smile
               </h2>
-              <p>
-                Your cheerful companion for joyful conversations and positive interactions.
-                Start a conversation by typing a message or try one of the smile-inducing suggestions below.
-              </p>
+              {/* Removed the descriptive text as requested */}
               <div className="empty-chat-suggestions">
                 {suggestedPrompts.map((prompt, index) => (
                   <button 
