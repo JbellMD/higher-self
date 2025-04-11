@@ -30,12 +30,12 @@ function App() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
-  // Sample suggested prompts
+  // Suggested prompts for empty chat
   const suggestedPrompts = [
-    "What is the meaning of life?",
-    "How can I be more mindful?",
-    "Tell me about consciousness",
-    "How can I improve my meditation practice?"
+    "Tell me something that will make me smile today",
+    "How can I spread more joy in my life?",
+    "Share a funny story with me",
+    "What's a good way to brighten someone's day?"
   ];
 
   // Load data from localStorage on initial render
@@ -304,11 +304,11 @@ function App() {
       {/* Sidebar */}
       <div className={`sidebar ${sidebarOpen ? 'sidebar-open' : ''}`}>
         <div className="sidebar-header">
-          <h2>Chat History</h2>
+          <h2>Smile History</h2>
           <button className="sidebar-close" onClick={toggleSidebar}>×</button>
         </div>
         <button className="new-chat-button" onClick={createNewSession}>
-          <span>+</span> New Chat
+          <span>+</span> New Smile
         </button>
         <div className="session-list">
           {sessions.map(session => (
@@ -363,7 +363,7 @@ function App() {
         <header className="App-header">
           <div className="header-left">
             <button className="menu-button" onClick={toggleSidebar}>☰</button>
-            <h1>{currentSession?.title || 'Higher Self'}</h1>
+            <h1>{currentSession?.title || 'The Always Laughing Smile'}</h1>
           </div>
           <div className="App-header-actions">
             <label className="toggle-switch" title={darkMode ? "Switch to light mode" : "Switch to dark mode"}>
@@ -378,19 +378,19 @@ function App() {
             </label>
             <button onClick={clearChat} className="clear-button" title="Clear current chat">
               <span className="clear-icon">🗑️</span>
-              Clear Chat
+              Clear Smile
             </button>
           </div>
         </header>
         
         <div className="chat-container">
+          <div className="shooting-star-2"></div>
           {messages.length === 0 ? (
             <div className="empty-chat">
-              <div className="empty-chat-icon">💭</div>
-              <h2>Welcome to Higher Self</h2>
+              <h2 className="welcome-title">The Always Laughing Smile</h2>
               <p>
-                Your AI companion for mindful conversations and personal growth.
-                Start a conversation by typing a message or try one of the suggestions below.
+                Your cheerful companion for joyful conversations and positive interactions.
+                Start a conversation by typing a message or try one of the smile-inducing suggestions below.
               </p>
               <div className="empty-chat-suggestions">
                 {suggestedPrompts.map((prompt, index) => (
@@ -449,7 +449,7 @@ function App() {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyPress={handleKeyPress}
-              placeholder="Type your message..."
+              placeholder="Share your thoughts with a smile..."
               disabled={isLoading}
             />
             <button 
