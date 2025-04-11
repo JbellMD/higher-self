@@ -1,40 +1,35 @@
-const openaiService = require('../services/openaiService');
+const { getChatCompletion } = require('../services/openaiService');
 
 /**
- * Send a message to the OpenAI API and get a response
+ * Controller for handling chat messages
  * @param {Object} req - Express request object
  * @param {Object} res - Express response object
+ * @param {Function} next - Express next function
  */
-const sendMessage = async (req, res) => {
+const sendMessage = async (req, res, next) => {
   try {
-    const { message, messageHistory = [] } = req.body;
-
-    if (!message) {
-      return res.status(400).json({
-        success: false,
-        error: 'Please provide a message',
-      });
-    }
-
-    // Get response from OpenAI
-    const response = await openaiService.getChatCompletion(message, messageHistory);
-
+    const { message, messageHistory } = req.body;
+    
+    // Log incoming request (without sensitive data)
+    console.log(`Received message request. Length: ${message.length} characters`);
+    
+    // Call the OpenAI service to get a response
+    const response = await getChatCompletion(message, messageHistory);
+    
+    // Return the response
     return res.status(200).json({
       success: true,
       data: {
         message: response,
-      },
+        timestamp: new Date().toISOString()
+      }
     });
   } catch (error) {
-    console.error('Error in sendMessage controller:', error);
-    
-    return res.status(500).json({
-      success: false,
-      error: error.message || 'An error occurred while processing your request',
-    });
+    // Pass the error to the global error handler
+    next(error);
   }
 };
 
 module.exports = {
-  sendMessage,
+  sendMessage
 };

@@ -4,11 +4,18 @@ A modern chatbot application built with React, TypeScript, Node.js, and the Open
 
 ## Features
 
-- Clean, responsive UI with animations
-- Chat history management
+- Clean, responsive UI with dark blue and black color scheme
+- Advanced chat history management
+  - Categories (General, Personal, Work, Ideas)
+  - Tagging functionality
+  - Pinning important sessions
+  - Search functionality
+  - Multi-select mode for bulk actions
+  - Import/export sessions
 - Real-time typing indicators
-- Dark/light mode toggle
-- Session management
+- Error handling and notifications
+- Performance optimizations
+- Security measures
 
 ## Project Structure
 
@@ -18,12 +25,13 @@ higher-self/
 │   ├── public/         # Static files
 │   └── src/            # Source files
 │       ├── components/ # React components
-│       ├── contexts/   # React context providers
+│       ├── hooks/      # Custom React hooks
 │       └── styles/     # CSS and styling
-└── backend/            # Node.js TypeScript backend
+└── backend/            # Node.js backend
     └── src/            # Source files
         ├── controllers/ # Request handlers
         ├── routes/      # API routes
+        ├── middleware/  # Express middleware
         └── services/    # Business logic
 ```
 
@@ -57,48 +65,84 @@ higher-self/
 
 4. Create a `.env` file in the backend directory:
    ```
-   cp .env.example .env
+   PORT=5000
+   OPENAI_API_KEY=your_openai_api_key_here
    ```
 
-5. Add your OpenAI API key to the `.env` file:
+5. Start the development servers:
    ```
-   OPENAI_API_KEY=your_api_key_here
-   ```
-
-### Running the Application
-
-1. Start the backend server:
-   ```
-   cd backend
+   # In the backend directory
    npm run dev
-   ```
-
-2. Start the frontend development server:
-   ```
-   cd frontend
+   
+   # In the frontend directory (in a separate terminal)
    npm start
    ```
 
-3. Open your browser and navigate to `http://localhost:3000`
+## Performance Optimizations
 
-## Usage
+The application has been optimized for performance in several ways:
 
-1. Type your message in the input field at the bottom of the screen
-2. Press Enter or click the Send button to send your message
-3. The AI will respond with a thoughtful message
+1. **React Optimizations**
+   - Memoized components with React.memo
+   - Optimized expensive calculations with useMemo
+   - Prevented unnecessary re-renders with useCallback
+   - Implemented proper dependency arrays in useEffect hooks
 
-## Technologies Used
+2. **Error Handling**
+   - Global error boundary for React components
+   - Custom error handling middleware for the backend
+   - User-friendly error messages with toast notifications
+   - Comprehensive API error handling
 
-### Frontend
-- React
-- TypeScript
-- CSS for styling
+3. **Security Measures**
+   - Input validation middleware
+   - Rate limiting to prevent abuse
+   - Helmet.js for HTTP header security
+   - Request size limiting
+   - CORS configuration
 
-### Backend
-- Node.js
-- Express
-- TypeScript
-- OpenAI API
+## Deployment
+
+### Frontend Deployment
+
+1. Create a production build:
+   ```
+   cd frontend
+   npm run build
+   ```
+
+2. The build artifacts will be in the `build` directory, which can be deployed to any static hosting service like Netlify, Vercel, or AWS S3.
+
+### Backend Deployment
+
+1. Run the deployment script:
+   ```
+   cd backend
+   node deploy.js
+   ```
+
+2. The production-ready application will be in the `dist` directory.
+
+3. Deploy the `dist` directory to your server or cloud provider (AWS, Heroku, DigitalOcean, etc.).
+
+4. Start the server in production mode:
+   ```
+   NODE_ENV=production node dist/index.js
+   ```
+
+## Environment Variables
+
+### Frontend (.env.production)
+- `REACT_APP_API_URL`: URL of the backend API
+- `GENERATE_SOURCEMAP`: Set to 'false' for production
+
+### Backend (.env.production)
+- `PORT`: Port number for the server
+- `NODE_ENV`: Set to 'production'
+- `OPENAI_API_KEY`: Your OpenAI API key
+- `CORS_ORIGIN`: Allowed origins for CORS
+- `RATE_LIMIT_WINDOW_MS`: Rate limiting window in milliseconds
+- `RATE_LIMIT_MAX`: Maximum requests per window
 
 ## License
 

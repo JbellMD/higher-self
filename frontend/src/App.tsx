@@ -1,5 +1,9 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import './App.css';
+import Message from './components/Message';
+import LoadingIndicator from './components/LoadingIndicator';
+import { useApi } from './hooks/useApi';
+import { useToast } from './components/ToastContainer';
 
 interface Message {
   id: string;
@@ -22,8 +26,8 @@ interface ChatSession {
 function App() {
   const [sessions, setSessions] = useState<ChatSession[]>([]);
   const [currentSessionId, setCurrentSessionId] = useState<string>('');
-  const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
+  const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [darkMode, setDarkMode] = useState(true); // Default to dark mode
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -36,10 +40,21 @@ function App() {
   const [sessionTags, setSessionTags] = useState<string[]>([]);
   const [newTag, setNewTag] = useState('');
   const [showTagInput, setShowTagInput] = useState(false);
-  const [categories, setCategories] = useState<string[]>(['General', 'Personal', 'Work', 'Ideas']);
+  const [categories] = useState<string[]>(['General', 'Personal', 'Work', 'Ideas']);
   const [selectedCategory, setSelectedCategory] = useState('All');
+  const API_URL = 'http://localhost:5000/api/chat/send';
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+  const { addToast } = useToast();
+  
+  // Setup API hook for chat
+  const chatApi = useApi<{success: boolean; data: {message: string; timestamp: string}}>({
+    url: API_URL,
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    timeout: 30000, // 30 second timeout
+  });
 
   // Suggested prompts for empty chat
   const suggestedPrompts = [
@@ -57,18 +72,27 @@ function App() {
 
     if (savedSessions) {
       const parsedSessions = JSON.parse(savedSessions);
-      setSessions(parsedSessions);
       
-      if (savedCurrentSession && parsedSessions.some((s: ChatSession) => s.id === savedCurrentSession)) {
+      // Migrate old sessions to include new fields
+      const migratedSessions = parsedSessions.map((session: ChatSession) => ({
+        ...session,
+        tags: session.tags || [],
+        isPinned: session.isPinned || false,
+        category: session.category || 'General'
+      }));
+      
+      setSessions(migratedSessions);
+      
+      if (savedCurrentSession && migratedSessions.some((s: ChatSession) => s.id === savedCurrentSession)) {
         setCurrentSessionId(savedCurrentSession);
-        const currentSession = parsedSessions.find((s: ChatSession) => s.id === savedCurrentSession);
+        const currentSession = migratedSessions.find((s: ChatSession) => s.id === savedCurrentSession);
         if (currentSession) {
           setMessages(currentSession.messages);
         }
-      } else if (parsedSessions.length > 0) {
+      } else if (migratedSessions.length > 0) {
         // If no current session is saved or it doesn't exist, use the first session
-        setCurrentSessionId(parsedSessions[0].id);
-        setMessages(parsedSessions[0].messages);
+        setCurrentSessionId(migratedSessions[0].id);
+        setMessages(migratedSessions[0].messages);
       }
     } else {
       // Create a default session if none exist
@@ -127,32 +151,39 @@ function App() {
   }, [messages, currentSessionId]);
 
   // Filter sessions based on search term, tags, and category
-  const filteredSessions = sessions
-    .filter(session => {
-      // Filter by search term
-      const matchesSearch = searchTerm === '' || 
-        session.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        session.messages.some(msg => msg.content.toLowerCase().includes(searchTerm.toLowerCase()));
-      
-      // Filter by category
-      const matchesCategory = selectedCategory === 'All' || session.category === selectedCategory;
-      
-      return matchesSearch && matchesCategory;
-    })
-    .sort((a, b) => {
-      // Sort by pinned status first (pinned sessions at the top)
-      if (a.isPinned && !b.isPinned) return -1;
-      if (!a.isPinned && b.isPinned) return 1;
-      
-      // Then sort by updated date (newest first)
-      return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
-    });
+  const filteredSessions = useMemo(() => {
+    return sessions
+      .filter(session => {
+        // Filter by search term
+        const matchesSearch = searchTerm === '' || 
+          session.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          session.messages.some(msg => msg.content.toLowerCase().includes(searchTerm.toLowerCase()));
+        
+        // Filter by category
+        const matchesCategory = selectedCategory === 'All' || session.category === selectedCategory;
+        
+        return matchesSearch && matchesCategory;
+      })
+      .sort((a, b) => {
+        // Sort by pinned status first (pinned sessions at the top)
+        if (a.isPinned && !b.isPinned) return -1;
+        if (!a.isPinned && b.isPinned) return 1;
+        
+        // Then sort by updated date (newest first)
+        return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
+      });
+  }, [sessions, searchTerm, selectedCategory]);
+    
+  // Get current session from sessions array
+  const currentSession = useMemo(() => {
+    return sessions.find(session => session.id === currentSessionId);
+  }, [sessions, currentSessionId]);
 
-  const scrollToBottom = () => {
+  const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
+  }, []);
 
-  const createNewSession = () => {
+  const createNewSession = useCallback(() => {
     const newSession: ChatSession = {
       id: Date.now().toString(),
       title: 'New Chat',
@@ -168,10 +199,10 @@ function App() {
     setCurrentSessionId(newSession.id);
     setMessages([]);
     setSidebarOpen(false);
-  };
+  }, []);
 
   // Toggle pin status for a session
-  const togglePinSession = (sessionId: string, e: React.MouseEvent) => {
+  const togglePinSession = useCallback((sessionId: string, e: React.MouseEvent) => {
     e.stopPropagation();
     setSessions(prevSessions => 
       prevSessions.map(session => 
@@ -180,10 +211,10 @@ function App() {
           : session
       )
     );
-  };
+  }, []);
 
   // Add tag to current session
-  const addTagToSession = (tag: string) => {
+  const addTagToSession = useCallback((tag: string) => {
     if (!tag.trim() || !currentSessionId) return;
     
     setSessions(prevSessions => 
@@ -206,10 +237,10 @@ function App() {
     
     setNewTag('');
     setShowTagInput(false);
-  };
+  }, [currentSessionId, sessionTags]);
 
   // Remove tag from current session
-  const removeTagFromSession = (tag: string) => {
+  const removeTagFromSession = useCallback((tag: string) => {
     setSessions(prevSessions => 
       prevSessions.map(session => 
         session.id === currentSessionId 
@@ -220,10 +251,10 @@ function App() {
           : session
       )
     );
-  };
+  }, [currentSessionId]);
 
   // Change category of current session
-  const changeSessionCategory = (category: string) => {
+  const changeSessionCategory = useCallback((category: string) => {
     setSessions(prevSessions => 
       prevSessions.map(session => 
         session.id === currentSessionId 
@@ -231,10 +262,10 @@ function App() {
           : session
       )
     );
-  };
+  }, [currentSessionId]);
 
   // Export selected sessions or current session
-  const exportSessions = () => {
+  const exportSessions = useCallback(() => {
     const sessionsToExport = isMultiSelectMode && selectedSessions.length > 0
       ? sessions.filter(session => selectedSessions.includes(session.id))
       : sessions.filter(session => session.id === currentSessionId);
@@ -248,10 +279,10 @@ function App() {
     linkElement.setAttribute('href', dataUri);
     linkElement.setAttribute('download', exportFileDefaultName);
     linkElement.click();
-  };
+  }, [sessions, currentSessionId, isMultiSelectMode, selectedSessions]);
 
   // Import sessions from file
-  const importSessions = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const importSessions = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
     
@@ -283,16 +314,16 @@ function App() {
     
     // Reset the input
     event.target.value = '';
-  };
+  }, []);
 
   // Toggle multi-select mode
-  const toggleMultiSelectMode = () => {
+  const toggleMultiSelectMode = useCallback(() => {
     setIsMultiSelectMode(!isMultiSelectMode);
     setSelectedSessions([]);
-  };
+  }, [isMultiSelectMode]);
 
   // Toggle session selection in multi-select mode
-  const toggleSessionSelection = (sessionId: string, e: React.MouseEvent) => {
+  const toggleSessionSelection = useCallback((sessionId: string, e: React.MouseEvent) => {
     if (!isMultiSelectMode) return;
     
     e.stopPropagation();
@@ -301,10 +332,10 @@ function App() {
         ? prev.filter(id => id !== sessionId)
         : [...prev, sessionId]
     );
-  };
+  }, [isMultiSelectMode]);
 
   // Delete selected sessions
-  const deleteSelectedSessions = () => {
+  const deleteSelectedSessions = useCallback(() => {
     if (selectedSessions.length === 0) return;
     
     // Filter out the sessions to delete
@@ -322,9 +353,9 @@ function App() {
     setSessions(updatedSessions);
     setSelectedSessions([]);
     setIsMultiSelectMode(false);
-  };
+  }, [selectedSessions, sessions, currentSessionId]);
 
-  const selectSession = (sessionId: string) => {
+  const selectSession = useCallback((sessionId: string) => {
     if (isMultiSelectMode) {
       toggleSessionSelection(sessionId, {} as React.MouseEvent);
       return;
@@ -336,9 +367,9 @@ function App() {
       setMessages(session.messages);
       setSidebarOpen(false);
     }
-  };
+  }, [isMultiSelectMode, sessions]);
 
-  const deleteSession = (sessionId: string, e: React.MouseEvent) => {
+  const deleteSession = useCallback((sessionId: string, e: React.MouseEvent) => {
     e.stopPropagation();
     
     // Filter out the session to delete
@@ -354,9 +385,9 @@ function App() {
     }
     
     setSessions(updatedSessions);
-  };
+  }, [sessions, currentSessionId]);
 
-  const startRenameSession = (sessionId: string, e: React.MouseEvent) => {
+  const startRenameSession = useCallback((sessionId: string, e: React.MouseEvent) => {
     e.stopPropagation();
     const session = sessions.find(s => s.id === sessionId);
     if (session) {
@@ -364,9 +395,9 @@ function App() {
       setNewSessionName(session.title);
       setIsRenaming(true);
     }
-  };
+  }, [sessions]);
 
-  const confirmRenameSession = () => {
+  const confirmRenameSession = useCallback(() => {
     if (sessionToRename && newSessionName.trim()) {
       setSessions(prevSessions => 
         prevSessions.map(session => 
@@ -377,122 +408,142 @@ function App() {
       );
     }
     cancelRenameSession();
-  };
+  }, [sessionToRename, newSessionName]);
 
-  const cancelRenameSession = () => {
+  const cancelRenameSession = useCallback(() => {
     setIsRenaming(false);
     setSessionToRename(null);
     setNewSessionName('');
-  };
+  }, []);
 
-  const truncateTitle = (content: string) => {
+  const truncateTitle = useCallback((content: string) => {
     return content.length > 25 ? content.substring(0, 25) + '...' : content;
-  };
+  }, []);
 
-  const handleSendMessage = async (content: string = input) => {
+  const handleSendMessage = useCallback(async (content: string = input) => {
     if ((!content.trim() && !input.trim()) || isLoading) return;
 
     const messageContent = content.trim() || input.trim();
-
-    // Add user message
-    const userMessage: Message = {
-      id: Date.now().toString(),
-      content: messageContent,
-      role: 'user',
-      timestamp: new Date().toISOString(),
-    };
-
-    setMessages((prev) => [...prev, userMessage]);
     setInput('');
-    setIsLoading(true);
 
     try {
-      // Get message history for context
-      const messageHistory = messages.map(msg => ({
-        role: msg.role,
-        content: msg.content,
+      setIsLoading(true);
+
+      // Create user message
+      const userMessage: Message = {
+        id: Date.now().toString(),
+        content: messageContent,
+        role: 'user',
+        timestamp: new Date().toISOString(),
+      };
+
+      // Add user message to state
+      const updatedMessages = [...messages, userMessage];
+      setMessages(updatedMessages);
+
+      // Update session messages
+      setSessions(prevSessions => prevSessions.map(session => {
+        if (session.id === currentSessionId) {
+          return {
+            ...session,
+            messages: updatedMessages,
+            updatedAt: new Date().toISOString()
+          };
+        }
+        return session;
       }));
 
-      // Call the API
-      const response = await fetch(`${API_URL}/chat/send`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
+      // Format message history for the API
+      const messageHistory = messages.map(msg => ({
+        role: msg.role,
+        content: msg.content
+      }));
+
+      try {
+        // Call the API
+        const response = await chatApi.execute({
           message: messageContent,
           messageHistory,
-        }),
-      });
+        });
 
-      if (!response.ok) {
-        throw new Error('Failed to get response from server');
+        if (!response || !response.success) {
+          throw new Error('Failed to get response from server');
+        }
+
+        // Add assistant message
+        const assistantMessage: Message = {
+          id: (Date.now() + 1).toString(),
+          content: response.data.message,
+          role: 'assistant',
+          timestamp: new Date().toISOString(),
+        };
+
+        const finalMessages = [...updatedMessages, assistantMessage];
+        setMessages(finalMessages);
+
+        // Update session messages and title for new sessions
+        setSessions(prevSessions => prevSessions.map(session => {
+          if (session.id === currentSessionId) {
+            // If this is a new session with the default title, use the first few words of the first message as the title
+            const title = session.title === 'New Chat' && session.messages.length === 0
+              ? messageContent.split(' ').slice(0, 5).join(' ') + '...'
+              : session.title;
+              
+            return {
+              ...session,
+              title,
+              messages: finalMessages,
+              updatedAt: new Date().toISOString()
+            };
+          }
+          return session;
+        }));
+      } catch (error) {
+        console.error('Error sending message:', error);
+        addToast(
+          error instanceof Error ? error.message : 'Failed to get response from server', 
+          'error'
+        );
       }
-
-      const data = await response.json();
-
-      // Add assistant message
-      const assistantMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        content: data.data.message,
-        role: 'assistant',
-        timestamp: new Date().toISOString(),
-      };
-
-      setMessages((prev) => [...prev, assistantMessage]);
-    } catch (error) {
-      console.error('Error sending message:', error);
-
-      // Add error message
-      const errorMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        content: 'Sorry, there was an error processing your request. Please try again.',
-        role: 'assistant',
-        timestamp: new Date().toISOString(),
-      };
-
-      setMessages((prev) => [...prev, errorMessage]);
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [input, messages, isLoading, currentSessionId, chatApi, addToast, sessions]);
 
-  const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
+  const handleKeyPress = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSendMessage();
     }
-  };
+  }, [handleSendMessage]);
 
-  const clearChat = () => {
+  const clearChat = useCallback(() => {
     setMessages([]);
-  };
+  }, []);
 
-  const toggleDarkMode = () => {
+  const toggleDarkMode = useCallback(() => {
     setDarkMode(!darkMode);
-  };
+  }, [darkMode]);
 
-  const toggleSidebar = () => {
+  const toggleSidebar = useCallback(() => {
     setSidebarOpen(!sidebarOpen);
-  };
+  }, [sidebarOpen]);
 
-  const handleSuggestionClick = (prompt: string) => {
+  const handleSuggestionClick = useCallback((prompt: string) => {
     handleSendMessage(prompt);
-  };
+  }, [handleSendMessage]);
 
   // Function to format the timestamp
-  const formatTime = (timestamp: string) => {
+  const formatTime = useCallback((timestamp: string) => {
     const date = new Date(timestamp);
     return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  };
+  }, []);
 
   // Function to format date for sidebar
-  const formatDate = (timestamp: string) => {
+  const formatDate = useCallback((timestamp: string) => {
     const date = new Date(timestamp);
     return date.toLocaleDateString();
-  };
-
-  const currentSession = sessions.find(s => s.id === currentSessionId);
+  }, []);
 
   return (
     <div className={`App ${darkMode ? 'dark-mode' : 'light-mode'} ${sidebarOpen ? 'sidebar-open' : ''}`}>
@@ -548,7 +599,7 @@ function App() {
                 </div>
                 <div className="session-meta">
                   <span className="session-date">{formatDate(session.updatedAt)}</span>
-                  {session.tags.length > 0 && (
+                  {session.tags && session.tags.length > 0 && (
                     <div className="session-item-tags">
                       {session.tags.slice(0, 2).map(tag => (
                         <span key={tag} className="session-item-tag">{tag}</span>
@@ -558,7 +609,7 @@ function App() {
                       )}
                     </div>
                   )}
-                  <span className="session-category-badge">{session.category}</span>
+                  <span className="session-category-badge">{session.category || 'General'}</span>
                 </div>
               </div>
               
@@ -715,7 +766,7 @@ function App() {
                     <div className="session-category">
                       <label>Category:</label>
                       <select 
-                        value={currentSession.category} 
+                        value={currentSession.category || 'General'} 
                         onChange={(e) => changeSessionCategory(e.target.value)}
                       >
                         {categories.map(category => (
@@ -726,7 +777,7 @@ function App() {
                     
                     <div className="session-tags">
                       <div className="tags-container">
-                        {currentSession.tags.map(tag => (
+                        {currentSession.tags && currentSession.tags.map(tag => (
                           <div key={tag} className="tag">
                             <span>{tag}</span>
                             <button onClick={() => removeTagFromSession(tag)}>×</button>
@@ -763,36 +814,18 @@ function App() {
               </div>
               
               <div className="messages">
-                {messages.map((message) => {
-                  const isUser = message.role === 'user';
-                  return (
-                    <div 
-                      key={message.id} 
-                      className={`message ${isUser ? 'user-message' : 'assistant-message'} slide-in`}
-                    >
-                      <div className={`message-avatar ${isUser ? 'user-avatar' : 'assistant-avatar'}`}>
-                        {isUser ? 'U' : 'H'}
-                      </div>
-                      <div className="message-bubble">
-                        <div className="message-content">{message.content}</div>
-                        <div className="message-timestamp">
-                          {formatTime(message.timestamp)}
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
+                {messages.map((message) => (
+                  <Message 
+                    key={message.id} 
+                    id={message.id}
+                    content={message.content}
+                    role={message.role}
+                    timestamp={message.timestamp}
+                    formatTime={formatTime}
+                  />
+                ))}
                 {isLoading && (
-                  <div className="message assistant-message slide-in">
-                    <div className="message-avatar assistant-avatar">H</div>
-                    <div className="message-bubble">
-                      <div className="typing-indicator">
-                        <span></span>
-                        <span></span>
-                        <span></span>
-                      </div>
-                    </div>
-                  </div>
+                  <LoadingIndicator />
                 )}
                 <div ref={messagesEndRef} />
               </div>
