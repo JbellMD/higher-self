@@ -21,6 +21,16 @@
     "jsx": "react-jsx"
   },
   "include": [
-    "src"
+    "src/App.tsx",
+    "src/index.tsx",
+    "src/reportWebVitals.ts",
+    "src/react-app-env.d.ts",
+    "src/index.css",
+    "src/App.css"
+  ],
+  "exclude": [
+    "src/components",
+    "src/contexts",
+    "src/styles"
   ]
 }

@@ -12,6 +12,7 @@ function App() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
   // Load messages from localStorage on initial render
   useEffect(() => {
@@ -49,7 +50,7 @@ function App() {
       }));
 
       // Call the API
-      const response = await fetch('http://localhost:5000/api/chat/send', {
+      const response = await fetch(`${API_URL}/chat/send`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
