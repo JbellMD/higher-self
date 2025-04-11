@@ -12,12 +12,12 @@ const Message: React.FC<MessageProps> = ({ id, content, role, timestamp, formatT
   const isUser = role === 'user';
   
   return (
-    <div className={`message ${isUser ? 'user-message' : 'assistant-message'} slide-in`}>
+    <div className={`message ${isUser ? 'user-message' : 'assistant-message'}`}>
       <div className={`message-avatar ${isUser ? 'user-avatar' : 'assistant-avatar'}`}>
         {isUser ? 'U' : 'H'}
       </div>
-      <div className="message-bubble">
-        <div className="message-content">{content}</div>
+      <div className="message-content">
+        <div className="message-text">{content}</div>
         <div className="message-timestamp">
           {formatTime(timestamp)}
         </div>

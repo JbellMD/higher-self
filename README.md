@@ -103,7 +103,65 @@ The application has been optimized for performance in several ways:
 
 ## Deployment
 
-### Frontend Deployment
+### Netlify (Frontend) and Render (Backend) Deployment
+
+#### Frontend Deployment to Netlify
+
+1. Create a Netlify account at [netlify.com](https://www.netlify.com/) if you don't have one already.
+
+2. Install the Netlify CLI:
+   ```
+   npm install -g netlify-cli
+   ```
+
+3. Login to Netlify:
+   ```
+   netlify login
+   ```
+
+4. Navigate to the frontend directory and deploy:
+   ```
+   cd frontend
+   netlify deploy --prod
+   ```
+
+5. Alternatively, connect your GitHub repository to Netlify:
+   - Go to [app.netlify.com](https://app.netlify.com/)
+   - Click "New site from Git"
+   - Select your repository
+   - Set build command to: `npm run build`
+   - Set publish directory to: `build`
+   - Set environment variables in the Netlify dashboard
+
+#### Backend Deployment to Render
+
+1. Create a Render account at [render.com](https://render.com/) if you don't have one already.
+
+2. Create a new Web Service:
+   - Go to the Render dashboard
+   - Click "New" and select "Web Service"
+   - Connect your GitHub repository
+   - Select the backend directory
+   - Render will automatically detect the `render.yaml` configuration
+
+3. Set up the following environment variables in the Render dashboard:
+   - `NODE_ENV`: production
+   - `PORT`: 10000
+   - `OPENAI_API_KEY`: Your OpenAI API key
+   - `CORS_ORIGIN`: Your Netlify site URL (e.g., https://higher-self.netlify.app)
+   - `RATE_LIMIT_WINDOW_MS`: 60000
+   - `RATE_LIMIT_MAX`: 60
+
+4. Deploy the service and wait for it to build and start.
+
+5. Update your frontend `.env.production` file with the Render backend URL:
+   ```
+   REACT_APP_API_URL=https://your-render-service-name.onrender.com/api
+   ```
+
+6. Redeploy your frontend to Netlify to use the updated backend URL.
+
+### Alternative Deployment Options
 
 1. Create a production build:
    ```
@@ -111,7 +169,7 @@ The application has been optimized for performance in several ways:
    npm run build
    ```
 
-2. The build artifacts will be in the `build` directory, which can be deployed to any static hosting service like Netlify, Vercel, or AWS S3.
+2. The build artifacts will be in the `build` directory, which can be deployed to any static hosting service like Vercel, AWS S3, or GitHub Pages.
 
 ### Backend Deployment
 
