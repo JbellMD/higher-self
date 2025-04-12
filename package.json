@@ -1,0 +1,21 @@
+{
+  "name": "higher-self",
+  "version": "1.0.0",
+  "description": "Higher Self AI Chatbot",
+  "main": "backend/src/server.js",
+  "scripts": {
+    "start": "node backend/src/server.js",
+    "install": "cd backend && npm install --production"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/JbellMD/higher-self.git"
+  },
+  "keywords": [
+    "chatbot",
+    "ai",
+    "openai"
+  ],
+  "author": "JbellMD",
+  "license": "MIT"
+}
