@@ -1,22 +1,22 @@
-import React, { useState, useRef, KeyboardEvent } from 'react';
+import React, { useState, useRef, KeyboardEvent, useEffect } from 'react';
 import {
   Flex,
-  Input,
+  Textarea,
   IconButton,
-  useColorModeValue,
   Spinner,
 } from '@chakra-ui/react';
 import { FaPaperPlane } from 'react-icons/fa';
 import { useChat } from '../contexts/ChatContext';
+import { useThemeValue } from '../hooks/useThemeValue';
 
 const ChatInput: React.FC = () => {
   const [message, setMessage] = useState('');
-  const inputRef = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
   const { sendMessage, isLoading } = useChat();
   
-  // Colors based on color mode
-  const inputBg = useColorModeValue('gray.100', 'gray.700');
-  const inputHoverBg = useColorModeValue('gray.200', 'gray.600');
+  // Colors based on theme
+  const inputBg = useThemeValue('gray.100', 'gray.700');
+  const inputHoverBg = useThemeValue('gray.200', 'gray.600');
   
   // Handle sending a message
   const handleSendMessage = async () => {
@@ -27,27 +27,45 @@ const ChatInput: React.FC = () => {
       // Focus the input after sending
       if (inputRef.current) {
         inputRef.current.focus();
+        // Reset height after sending
+        inputRef.current.style.height = 'auto';
       }
     }
   };
   
-  // Handle key press events (Enter to send)
-  const handleKeyPress = (e: KeyboardEvent<HTMLInputElement>) => {
+  // Handle key press events (Enter to send, Shift+Enter for new line)
+  const handleKeyPress = (e: KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSendMessage();
     }
   };
   
+  // Auto-resize textarea based on content
+  const resizeTextarea = () => {
+    if (inputRef.current) {
+      // Reset height to get the correct scrollHeight
+      inputRef.current.style.height = 'auto';
+      // Set the height to match content (with a max height constraint applied via CSS)
+      inputRef.current.style.height = `${Math.min(inputRef.current.scrollHeight, 200)}px`;
+    }
+  };
+  
+  // Update textarea height when message changes
+  useEffect(() => {
+    resizeTextarea();
+  }, [message]);
+  
   return (
     <Flex
       position="sticky"
-      bottom={0}
+      bottom="60px"
       p={4}
-      bg={useColorModeValue('white', 'gray.800')}
+      bg={useThemeValue('white', 'gray.800')}
       borderTopWidth="1px"
-      borderTopColor={useColorModeValue('gray.200', 'gray.700')}
+      borderTopColor={useThemeValue('gray.200', 'gray.700')}
       w="100%"
+      mb="0"
     >
       <Flex
         w="100%"
@@ -60,29 +78,33 @@ const ChatInput: React.FC = () => {
         _hover={{ bg: inputHoverBg }}
         transition="all 0.2s"
       >
-        <Input
+        <Textarea
           ref={inputRef}
           flex={1}
           placeholder="Type your message..."
           value={message}
           onChange={(e) => setMessage(e.target.value)}
-          onKeyPress={handleKeyPress}
-          variant="unstyled"
+          onKeyDown={handleKeyPress}
+          variant="outline"
           px={4}
           py={3}
           disabled={isLoading}
+          resize="none"
+          minH="40px"
+          maxH="200px"
+          overflow="auto"
+          rows={1}
         />
         
         <IconButton
           aria-label="Send message"
-          icon={isLoading ? <Spinner size="sm" /> : <FaPaperPlane />}
           colorScheme="brand"
           borderRadius="lg"
           m={1}
           onClick={handleSendMessage}
-          isDisabled={!message.trim() || isLoading}
+          disabled={!message.trim() || isLoading}
         >
-          Send
+          {isLoading ? <Spinner size="sm" /> : <FaPaperPlane />}
         </IconButton>
       </Flex>
     </Flex>

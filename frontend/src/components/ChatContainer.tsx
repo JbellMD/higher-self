@@ -28,9 +28,10 @@ const ChatContainer: React.FC = () => {
     <Flex
       direction="column"
       align="center"
-      justify="center"
+      justify="flex-start"
       h="100%"
       p={8}
+      pt={16}
       textAlign="center"
     >
       <MotionBox
@@ -38,15 +39,23 @@ const ChatContainer: React.FC = () => {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
       >
-        <Text fontSize="xl" fontWeight="bold" mb={2}>
-          Welcome to Higher Self
+        <Text fontSize="2xl" fontWeight="bold" mb={6} textShadow="0 0 10px rgba(0, 100, 255, 0.5)">
+          The Always Laughing Smile
         </Text>
-        <Text color="gray.500" mb={4}>
-          Your AI assistant powered by ChatGPT 4o
-        </Text>
-        <Text>
-          Start a conversation by typing a message below.
-        </Text>
+        <Flex direction="column" gap={4} mt={8}>
+          <Text fontSize="md" p={2} borderRadius="md" _hover={{ bg: useThemeValue('gray.100', 'gray.700') }}>
+            Tell me something that will make me smile today
+          </Text>
+          <Text fontSize="md" p={2} borderRadius="md" _hover={{ bg: useThemeValue('gray.100', 'gray.700') }}>
+            How can I spread more joy in my life?
+          </Text>
+          <Text fontSize="md" p={2} borderRadius="md" _hover={{ bg: useThemeValue('gray.100', 'gray.700') }}>
+            Share a funny story with me
+          </Text>
+          <Text fontSize="md" p={2} borderRadius="md" _hover={{ bg: useThemeValue('gray.100', 'gray.700') }}>
+            What's a good way to brighten someone's day?
+          </Text>
+        </Flex>
       </MotionBox>
     </Flex>
   );
@@ -109,19 +118,10 @@ const ChatContainer: React.FC = () => {
       p={4}
       bg={bgColor}
       overflowY="auto"
-      h="calc(100vh - 140px)"
-      css={{
-        '&::-webkit-scrollbar': {
-          width: '8px',
-        },
-        '&::-webkit-scrollbar-track': {
-          width: '10px',
-          background: useThemeValue('gray.100', 'gray.800'),
-        },
-        '&::-webkit-scrollbar-thumb': {
-          background: useThemeValue('gray.300', 'gray.600'),
-          borderRadius: '24px',
-        },
+      h="calc(100vh - 180px)"
+      style={{
+        scrollbarWidth: 'thin',
+        scrollbarColor: `${useThemeValue('gray.300', 'gray.600')} ${useThemeValue('gray.100', 'gray.800')}`
       }}
     >
       <Box maxW="1200px" mx="auto">

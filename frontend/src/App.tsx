@@ -738,7 +738,6 @@ function App() {
         </header>
         
         <div className="chat-container">
-          <div className="shooting-star-2"></div>
           {messages.length === 0 ? (
             <div className="empty-chat">
               <h2 className="welcome-title">

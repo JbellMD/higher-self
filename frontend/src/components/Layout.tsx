@@ -11,7 +11,7 @@ const Layout: React.FC = () => {
   const isMobile = useBreakpointValue({ base: true, md: false });
   
   return (
-    <Flex h="100vh" direction="column">
+    <Flex h="100vh" direction="column" position="relative">
       <Header />
       
       <Flex flex={1} overflow="hidden">

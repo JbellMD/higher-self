@@ -3,19 +3,22 @@ import {
   Flex,
   Heading,
   IconButton,
-  useColorMode,
-  useColorModeValue,
   Box,
 } from '@chakra-ui/react';
 import { FaSun, FaMoon } from 'react-icons/fa';
 import { motion } from 'framer-motion';
+import { useTheme } from 'next-themes';
+import { useThemeValue } from '../hooks/useThemeValue';
 
 const MotionBox = motion(Box);
 
 const Header: React.FC = () => {
-  const { colorMode, toggleColorMode } = useColorMode();
-  const bgColor = useColorModeValue('white', 'gray.800');
-  const borderColor = useColorModeValue('gray.200', 'gray.700');
+  const { resolvedTheme, setTheme } = useTheme();
+  const isDark = resolvedTheme === 'dark';
+  
+  const toggleTheme = () => {
+    setTheme(isDark ? 'light' : 'dark');
+  };
   
   return (
     <Flex
@@ -23,39 +26,47 @@ const Header: React.FC = () => {
       align="center"
       justify="space-between"
       p={4}
-      bg={bgColor}
+      bg="rgba(0, 0, 0, 0.7)"
+      backdropFilter="blur(10px)"
       borderBottomWidth="1px"
-      borderBottomColor={borderColor}
+      borderBottomColor="rgba(30, 30, 60, 0.3)"
       position="sticky"
       top={0}
       zIndex={10}
+      boxShadow="0 0 10px rgba(0, 0, 255, 0.2)"
     >
       <Flex align="center">
         <MotionBox
-          initial={{ rotate: 0 }}
-          animate={{ rotate: 360 }}
-          transition={{ duration: 2, repeat: Infinity, repeatType: 'loop', ease: 'linear' }}
-          mr={3}
+          animate={{
+            rotate: [0, 10, -10, 10, 0],
+          }}
+          transition={{
+            duration: 2,
+            ease: "easeInOut",
+            repeat: Infinity,
+            repeatType: "reverse",
+          }}
           display="inline-block"
+          mr={2}
         >
-          <Box
-            as="span"
-            fontSize="2xl"
-            role="img"
-            aria-label="Logo"
-          >
+          <Box fontSize="xl">
             ✨
           </Box>
         </MotionBox>
-        <Heading size="md">Higher Self</Heading>
+        <Heading size="md" fontWeight="bold" color="white" textShadow="0 0 5px rgba(0, 100, 255, 0.7)">
+          The Always Laughing Smile
+        </Heading>
       </Flex>
       
       <IconButton
-        aria-label={`Switch to ${colorMode === 'light' ? 'dark' : 'light'} mode`}
-        icon={colorMode === 'light' ? <FaMoon /> : <FaSun />}
-        onClick={toggleColorMode}
+        aria-label={`Toggle ${isDark ? 'Light' : 'Dark'} Mode`}
+        onClick={toggleTheme}
         variant="ghost"
-      />
+        color="blue.300"
+        _hover={{ bg: "rgba(0, 0, 100, 0.2)" }}
+      >
+        {isDark ? <FaSun /> : <FaMoon />}
+      </IconButton>
     </Flex>
   );
 };

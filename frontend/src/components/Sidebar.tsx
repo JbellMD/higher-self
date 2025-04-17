@@ -40,11 +40,11 @@ const Sidebar: React.FC = () => {
   const { open, onOpen, onClose } = useDisclosure();
   const [sessionToDelete, setSessionToDelete] = useState<string | null>(null);
   
-  // Colors based on color mode
-  const bgColor = useThemeValue('white', 'gray.800');
-  const borderColor = useThemeValue('gray.200', 'gray.700');
-  const hoverBgColor = useThemeValue('gray.100', 'gray.700');
-  const activeBgColor = useThemeValue('gray.200', 'gray.600');
+  const bgColor = "rgba(0, 0, 0, 0.7)";
+  const hoverBgColor = "rgba(20, 30, 80, 0.5)";
+  const selectedBgColor = "rgba(30, 40, 100, 0.7)";
+  const textColor = "white";
+  const borderColor = "rgba(30, 30, 60, 0.3)";
   
   // Handle session selection
   const handleSelectSession = (sessionId: string) => {
@@ -93,24 +93,55 @@ const Sidebar: React.FC = () => {
     return format(new Date(dateString), 'MMM d, yyyy');
   };
   
+  const handleCreateNewSession = () => {
+    createSession();
+  };
+  
   return (
-    <Box
-      w={{ base: 'full', md: '300px' }}
-      h="100vh"
+    <Box 
+      h="100%" 
+      w="100%" 
       bg={bgColor}
-      borderRightWidth="1px"
-      borderRightColor={borderColor}
-      p={4}
-      position="relative"
+      backdropFilter="blur(10px)"
+      borderRight="1px" 
+      borderColor={borderColor}
+      boxShadow="0 0 10px rgba(0, 0, 255, 0.1)"
+      overflowY="auto"
+      css={{
+        '&::-webkit-scrollbar': {
+          width: '4px',
+        },
+        '&::-webkit-scrollbar-track': {
+          width: '6px',
+          background: 'transparent',
+        },
+        '&::-webkit-scrollbar-thumb': {
+          background: 'rgba(100, 100, 255, 0.3)',
+          borderRadius: '24px',
+        },
+      }}
     >
-      <Flex direction="column" h="full">
-        <Flex justify="space-between" align="center" mb={4}>
-          <Text fontSize="xl" fontWeight="bold">Conversations</Text>
+      <Flex 
+        direction="column" 
+        h="100%" 
+        p={4}
+      >
+        <Flex justify="space-between" align="center" mb={6}>
+          <Text 
+            fontWeight="bold" 
+            fontSize="lg"
+            color={textColor}
+            textShadow="0 0 5px rgba(0, 100, 255, 0.5)"
+          >
+            Conversations
+          </Text>
           <IconButton
-            aria-label="New smile"
+            aria-label="New conversation"
             size="sm"
-            colorScheme="brand"
-            onClick={createSession}
+            onClick={handleCreateNewSession}
+            color="blue.300"
+            bg="transparent"
+            _hover={{ bg: hoverBgColor }}
           >
             <FaPlus />
           </IconButton>
@@ -123,10 +154,6 @@ const Sidebar: React.FC = () => {
           alignItems="stretch"
           overflowY="auto"
           flex={1}
-          style={{
-            scrollbarWidth: 'thin',
-            scrollbarColor: `${useThemeValue('rgba(160, 174, 192, 0.5)', 'rgba(74, 85, 104, 0.5)')} transparent`
-          }}
         >
           {sessions.map((session) => (
             <MotionBox
@@ -136,7 +163,7 @@ const Sidebar: React.FC = () => {
               exit={{ opacity: 0, x: -20 }}
               transition={{ duration: 0.2 }}
               onClick={() => handleSelectSession(session.id)}
-              bg={currentSessionId === session.id ? activeBgColor : 'transparent'}
+              bg={currentSessionId === session.id ? selectedBgColor : 'transparent'}
               _hover={{ bg: hoverBgColor }}
               borderRadius="md"
               p={3}
@@ -187,6 +214,7 @@ const Sidebar: React.FC = () => {
                       overflow="hidden"
                       textOverflow="ellipsis"
                       whiteSpace="nowrap"
+                      color={textColor}
                     >
                       {session.title}
                     </Text>

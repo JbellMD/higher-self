@@ -50,9 +50,8 @@
 
 body {
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  background-color: var(--background-color);
   color: var(--text-color);
-  transition: background-color var(--transition-speed), color var(--transition-speed);
+  transition: color var(--transition-speed);
 }
 
 .App {
