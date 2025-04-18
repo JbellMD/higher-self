@@ -58,18 +58,7 @@ const ChatInput: React.FC = () => {
   };
   
   return (
-    <Box
-      position="fixed"
-      bottom="0"
-      left="0"
-      right="0"
-      p={4}
-      bg={useThemeValue('black', 'black')}
-      borderTopWidth="1px"
-      borderTopColor={useThemeValue('gray.600', 'gray.600')}
-      zIndex="10"
-      mb="0"
-    >
+    <Box className="chat-input-container" position="fixed" bottom="0" left="0" right="0" p={4} bg={useThemeValue('black', 'black')} borderTopWidth="1px" borderTopColor={useThemeValue('gray.600', 'gray.600')} zIndex="10" mb="0">
       <Flex
         w="100%"
         maxW="1200px"
@@ -102,32 +91,21 @@ const ChatInput: React.FC = () => {
             boxShadow: "none",
             borderColor: "transparent"
           }}
-          css={{
-            "&": {
-              height: "auto !important",
-              minHeight: "40px",
-              maxHeight: "200px",
-              transition: "height 0.1s ease-in-out"
-            },
-            "&::placeholder": {
-              color: useThemeValue("gray.500", "gray.400")
-            }
-          }}
+          className="auto-resize-textarea"
         />
         
-        <IconButton
-          aria-label="Send message"
-          colorScheme="brand"
-          borderRadius="lg"
-          position="absolute"
-          right="8px"
-          bottom="8px"
-          onClick={handleSendMessage}
-          disabled={!message.trim() || isLoading}
-          zIndex="2"
-        >
-          {isLoading ? <Spinner size="sm" /> : <FaPaperPlane />}
-        </IconButton>
+        <Box className="send-button-container" position="absolute" right="8px" bottom="8px">
+          <IconButton
+            aria-label="Send message"
+            colorScheme="brand"
+            borderRadius="lg"
+            onClick={handleSendMessage}
+            disabled={!message.trim() || isLoading}
+            zIndex="2"
+          >
+            {isLoading ? <Spinner size="sm" /> : <FaPaperPlane />}
+          </IconButton>
+        </Box>
       </Flex>
     </Box>
   );
