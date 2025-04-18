@@ -4,6 +4,7 @@ import {
   Textarea,
   IconButton,
   Spinner,
+  Box,
 } from '@chakra-ui/react';
 import { FaPaperPlane } from 'react-icons/fa';
 import { useChat } from '../contexts/ChatContext';
@@ -28,7 +29,7 @@ const ChatInput: React.FC = () => {
       if (inputRef.current) {
         inputRef.current.focus();
         // Reset height after sending
-        inputRef.current.style.height = 'auto';
+        inputRef.current.style.height = '40px';
       }
     }
   };
@@ -41,73 +42,94 @@ const ChatInput: React.FC = () => {
     }
   };
   
-  // Auto-resize textarea based on content
-  const resizeTextarea = () => {
+  // Handle input change and resize
+  const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setMessage(e.target.value);
+    
+    // Auto resize the textarea
     if (inputRef.current) {
-      // Reset height to get the correct scrollHeight
-      inputRef.current.style.height = 'auto';
-      // Set the height to match content (with a max height constraint applied via CSS)
-      inputRef.current.style.height = `${Math.min(inputRef.current.scrollHeight, 200)}px`;
+      // Reset height temporarily to get the correct scrollHeight
+      inputRef.current.style.height = '40px';
+      
+      // Set the height based on scrollHeight (capped at 200px)
+      const newHeight = Math.min(inputRef.current.scrollHeight, 200);
+      inputRef.current.style.height = `${newHeight}px`;
     }
   };
   
-  // Update textarea height when message changes
-  useEffect(() => {
-    resizeTextarea();
-  }, [message]);
-  
   return (
-    <Flex
-      position="sticky"
-      bottom="60px"
+    <Box
+      position="fixed"
+      bottom="0"
+      left="0"
+      right="0"
       p={4}
-      bg={useThemeValue('white', 'gray.800')}
+      bg={useThemeValue('black', 'black')}
       borderTopWidth="1px"
-      borderTopColor={useThemeValue('gray.200', 'gray.700')}
-      w="100%"
+      borderTopColor={useThemeValue('gray.600', 'gray.600')}
+      zIndex="10"
       mb="0"
     >
       <Flex
         w="100%"
         maxW="1200px"
         mx="auto"
-        align="center"
         boxShadow="md"
         borderRadius="lg"
         bg={inputBg}
         _hover={{ bg: inputHoverBg }}
         transition="all 0.2s"
+        position="relative"
       >
         <Textarea
           ref={inputRef}
-          flex={1}
-          placeholder="Type your message..."
           value={message}
-          onChange={(e) => setMessage(e.target.value)}
+          onChange={handleInputChange}
           onKeyDown={handleKeyPress}
+          placeholder="Type your message..."
           variant="outline"
           px={4}
-          py={3}
-          disabled={isLoading}
-          resize="none"
+          py={2}
           minH="40px"
           maxH="200px"
+          resize="none"
           overflow="auto"
-          rows={1}
+          border="none"
+          borderRadius="lg"
+          w="100%"
+          disabled={isLoading}
+          _focus={{
+            boxShadow: "none",
+            borderColor: "transparent"
+          }}
+          css={{
+            "&": {
+              height: "auto !important",
+              minHeight: "40px",
+              maxHeight: "200px",
+              transition: "height 0.1s ease-in-out"
+            },
+            "&::placeholder": {
+              color: useThemeValue("gray.500", "gray.400")
+            }
+          }}
         />
         
         <IconButton
           aria-label="Send message"
           colorScheme="brand"
           borderRadius="lg"
-          m={1}
+          position="absolute"
+          right="8px"
+          bottom="8px"
           onClick={handleSendMessage}
           disabled={!message.trim() || isLoading}
+          zIndex="2"
         >
           {isLoading ? <Spinner size="sm" /> : <FaPaperPlane />}
         </IconButton>
       </Flex>
-    </Flex>
+    </Box>
   );
 };
 
